@@ -1,0 +1,1152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Biomedical Dept — Cooperative Hospital Matara</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #060910;
+  --bg2: #0b0f1a;
+  --panel: #0e1422;
+  --panel2: #121829;
+  --border: #1a2438;
+  --border2: #243350;
+  --accent: #3b9eff;
+  --accent-dim: rgba(59,158,255,0.12);
+  --green: #22d98a;
+  --yellow: #f5a623;
+  --red: #ff4d6a;
+  --text: #ccdff5;
+  --text2: #7a9ec0;
+  --text3: #3a5878;
+  --white: #e0ecff;
+  --font-head: 'Plus Jakarta Sans', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+  --font-body: 'Plus Jakarta Sans', sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font-family:var(--font-body);font-size:15px;line-height:1.6;min-height:100vh;overflow-x:hidden}
+
+/* ─── ANIMATED BG ─── */
+.bg-grid{position:fixed;inset:0;z-index:0;background-image:linear-gradient(rgba(59,158,255,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(59,158,255,.03) 1px,transparent 1px);background-size:48px 48px;pointer-events:none}
+.bg-glow{position:fixed;z-index:0;border-radius:50%;pointer-events:none;filter:blur(100px)}
+.bg-glow-1{width:600px;height:600px;background:radial-gradient(circle,rgba(59,158,255,.07),transparent 70%);top:-200px;right:-200px}
+.bg-glow-2{width:400px;height:400px;background:radial-gradient(circle,rgba(34,217,138,.05),transparent 70%);bottom:-100px;left:-100px}
+.bg-glow-3{width:300px;height:300px;background:radial-gradient(circle,rgba(255,77,106,.04),transparent 70%);top:50%;left:40%}
+
+/* ─── AUTH SCREENS ─── */
+.auth-screen{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px;position:relative;z-index:1}
+.auth-card{background:var(--panel);border:1px solid var(--border);border-radius:20px;width:460px;max-width:100%;box-shadow:0 0 80px rgba(59,158,255,.07),0 60px 120px rgba(0,0,0,.6);overflow:hidden}
+.auth-card-top{padding:36px 40px 28px;background:linear-gradient(160deg,var(--panel2),var(--panel));border-bottom:1px solid var(--border)}
+.hospital-logo{display:flex;align-items:center;gap:14px;margin-bottom:24px}
+.logo-mark{width:48px;height:48px;border-radius:12px;background:linear-gradient(135deg,var(--accent-dim),rgba(59,158,255,.25));border:1px solid rgba(59,158,255,.25);display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0}
+.logo-text-main{font-family:var(--font-head);font-size:14px;font-weight:700;color:var(--white);line-height:1.2}
+.logo-text-sub{font-family:var(--font-mono);font-size:10px;color:var(--accent);letter-spacing:2px;margin-top:3px}
+.auth-title{font-family:var(--font-head);font-size:26px;font-weight:800;color:var(--white)}
+.auth-subtitle{font-size:13px;color:var(--text2);margin-top:5px}
+.auth-tabs{display:flex;gap:0;margin-top:20px;background:var(--bg2);border-radius:10px;padding:4px}
+.auth-tab{flex:1;padding:8px;text-align:center;font-size:13px;font-weight:600;cursor:pointer;border-radius:7px;transition:all .2s;color:var(--text2)}
+.auth-tab.active{background:var(--panel2);color:var(--white);box-shadow:0 2px 8px rgba(0,0,0,.3)}
+.auth-body{padding:28px 40px 36px}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.form-group{margin-bottom:16px}
+.form-label{display:block;font-size:12px;font-weight:700;color:var(--text2);letter-spacing:1px;text-transform:uppercase;margin-bottom:7px}
+.form-input{width:100%;padding:12px 15px;background:var(--bg2);border:1px solid var(--border);border-radius:9px;color:var(--white);font-size:14.5px;font-family:var(--font-body);outline:none;transition:border-color .2s,box-shadow .2s}
+.form-input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(59,158,255,.1)}
+.form-input::placeholder{color:var(--text3)}
+select.form-input option{background:var(--panel)}
+.btn-auth{width:100%;padding:13px;background:linear-gradient(135deg,#2a7fd4,var(--accent));border:none;border-radius:10px;color:#fff;font-weight:700;font-size:15px;font-family:var(--font-head);letter-spacing:.5px;cursor:pointer;transition:opacity .2s,transform .1s;margin-top:4px}
+.btn-auth:hover{opacity:.9;transform:translateY(-1px)}
+.auth-err{background:rgba(255,77,106,.1);border:1px solid rgba(255,77,106,.2);border-radius:8px;padding:10px 14px;font-size:13px;color:var(--red);margin-bottom:14px;display:none}
+.auth-success{background:rgba(34,217,138,.1);border:1px solid rgba(34,217,138,.2);border-radius:8px;padding:10px 14px;font-size:13px;color:var(--green);margin-bottom:14px;display:none}
+
+/* ─── APP LAYOUT ─── */
+#app{display:none}
+.topbar{position:fixed;top:0;left:0;right:0;height:58px;z-index:100;background:rgba(8,12,22,.92);border-bottom:1px solid var(--border);backdrop-filter:blur(16px);display:flex;align-items:center;padding:0 22px;gap:16px}
+.topbar-brand{display:flex;align-items:center;gap:10px;flex:1}
+.topbar-logo{width:32px;height:32px;border-radius:8px;background:var(--accent-dim);border:1px solid rgba(59,158,255,.2);display:flex;align-items:center;justify-content:center;font-size:16px}
+.topbar-name{font-family:var(--font-head);font-size:15px;font-weight:700;color:var(--white)}
+.topbar-name span{color:var(--accent)}
+.topbar-user-info{display:flex;align-items:center;gap:10px}
+.user-avatar{width:32px;height:32px;border-radius:50%;background:var(--accent-dim);border:1px solid rgba(59,158,255,.25);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:var(--accent);font-family:var(--font-head)}
+.user-name{font-size:14px;color:var(--text);font-weight:500}
+.user-role-badge{padding:3px 9px;border-radius:20px;font-size:10px;font-weight:700;letter-spacing:.5px;text-transform:uppercase}
+.role-admin{background:rgba(59,158,255,.15);color:var(--accent);border:1px solid rgba(59,158,255,.2)}
+.role-technician{background:rgba(34,217,138,.12);color:var(--green);border:1px solid rgba(34,217,138,.2)}
+.role-hr{background:rgba(245,166,35,.12);color:var(--yellow);border:1px solid rgba(245,166,35,.2)}
+.btn-logout{padding:6px 13px;background:transparent;border:1px solid var(--border);border-radius:7px;color:var(--text2);font-size:12px;font-family:var(--font-body);cursor:pointer;transition:all .2s}
+.btn-logout:hover{border-color:var(--red);color:var(--red)}
+
+.sidebar{position:fixed;left:0;top:58px;bottom:0;width:214px;background:var(--panel);border-right:1px solid var(--border);overflow-y:auto;padding:14px 0;z-index:90}
+.sidebar::-webkit-scrollbar{width:3px}
+.sidebar::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+.nav-section{padding:10px 18px 4px;font-size:10px;font-weight:600;letter-spacing:2px;color:var(--text3);text-transform:uppercase}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 18px;cursor:pointer;font-size:14px;color:var(--text2);transition:all .15s;border-left:3px solid transparent;position:relative}
+.nav-item:hover{background:rgba(59,158,255,.04);color:var(--text)}
+.nav-item.active{background:rgba(59,158,255,.08);color:var(--accent);border-left-color:var(--accent)}
+.nav-icon{font-size:15px;width:18px;text-align:center}
+.nav-count{margin-left:auto;font-size:10px;padding:2px 6px;background:var(--bg2);border-radius:10px;color:var(--text3)}
+
+.main{margin-left:214px;padding-top:58px;min-height:100vh}
+.content{padding:26px}
+
+/* ─── PAGES ─── */
+.page-hdr{margin-bottom:24px}
+.page-title{font-family:var(--font-head);font-size:26px;font-weight:800;color:var(--white)}
+.page-sub{font-size:13px;color:var(--text2);margin-top:4px}
+
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px}
+.stat-card{background:var(--panel);border:1px solid var(--border);border-radius:13px;padding:20px;position:relative;overflow:hidden}
+.stat-card::after{content:'';position:absolute;top:0;left:0;right:0;height:2px}
+.stat-total::after{background:linear-gradient(90deg,var(--accent),#1e6fd4)}
+.stat-good::after{background:linear-gradient(90deg,var(--green),#0faa66)}
+.stat-svc::after{background:linear-gradient(90deg,var(--yellow),#d4890a)}
+.stat-rep::after{background:linear-gradient(90deg,var(--red),#cc1133)}
+.stat-lbl{font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text2);margin-bottom:8px;font-weight:600}
+.stat-val{font-family:var(--font-head);font-size:38px;font-weight:800;color:var(--white);line-height:1}
+.stat-val.gv{color:var(--green)}
+.stat-val.yv{color:var(--yellow)}
+.stat-val.rv{color:var(--red)}
+.stat-ico{position:absolute;right:14px;top:14px;font-size:26px;opacity:.2}
+
+.dept-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(350px,1fr));gap:18px}
+.dept-card{background:var(--panel);border:1px solid var(--border);border-radius:14px;overflow:hidden;transition:border-color .2s,box-shadow .2s}
+.dept-card:hover{border-color:var(--border2);box-shadow:0 0 24px rgba(59,158,255,.06)}
+.dept-hdr{padding:15px 18px;display:flex;align-items:center;gap:11px;border-bottom:1px solid var(--border);background:linear-gradient(120deg,var(--panel2),var(--panel))}
+.dept-ico{font-size:20px}
+.dept-nm{font-family:var(--font-head);font-size:17px;font-weight:700;color:var(--white)}
+.dept-nm small{display:block;font-size:12px;color:var(--text2);font-family:var(--font-body);font-weight:400}
+.dept-dots{margin-left:auto;display:flex;gap:5px}
+.dot{width:7px;height:7px;border-radius:50%}
+.dot-g{background:var(--green)}
+.dot-s{background:var(--yellow)}
+.dot-r{background:var(--red)}
+
+/* ─── EQUIPMENT ITEMS ─── */
+.equip-list{padding:8px 0}
+.equip-item{display:flex;align-items:center;gap:11px;padding:9px 16px;border-bottom:1px solid rgba(26,36,56,.6);transition:background .15s;cursor:pointer}
+.equip-item:last-child{border-bottom:none}
+.equip-item:hover{background:rgba(59,158,255,.03)}
+/* MACHINE IMAGE */
+.equip-thumb{width:46px;height:46px;border-radius:9px;background:var(--bg2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;overflow:hidden;position:relative}
+.equip-thumb img{width:100%;height:100%;object-fit:cover}
+.equip-thumb-upload{position:absolute;inset:0;background:rgba(0,0,0,.5);display:none;align-items:center;justify-content:center;font-size:12px;cursor:pointer}
+.equip-thumb:hover .equip-thumb-upload{display:flex}
+.equip-info{flex:1;min-width:0}
+.equip-nm{font-size:14px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.equip-id{font-family:var(--font-mono);font-size:11px;color:var(--text3);margin-top:1px}
+.status-pill{padding:4px 11px;border-radius:20px;font-size:12px;font-weight:700;white-space:nowrap;flex-shrink:0}
+.pill-Good{background:rgba(34,217,138,.1);color:var(--green);border:1px solid rgba(34,217,138,.18)}
+.pill-Service{background:rgba(245,166,35,.1);color:var(--yellow);border:1px solid rgba(245,166,35,.18)}
+.pill-Repair{background:rgba(255,77,106,.1);color:var(--red);border:1px solid rgba(255,77,106,.18)}
+
+.add-btn{display:flex;align-items:center;gap:7px;padding:7px 14px;margin:6px 16px 14px;background:rgba(59,158,255,.06);border:1px dashed rgba(59,158,255,.18);border-radius:8px;color:var(--accent);font-size:12px;cursor:pointer;transition:all .15s}
+.add-btn:hover{background:rgba(59,158,255,.12);border-color:var(--accent)}
+
+/* ─── MODALS ─── */
+.overlay{display:none;position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.75);backdrop-filter:blur(5px);align-items:center;justify-content:center;padding:20px}
+.overlay.open{display:flex}
+.modal{background:var(--panel);border:1px solid var(--border2);border-radius:18px;width:520px;max-width:100%;box-shadow:0 60px 120px rgba(0,0,0,.7);animation:mIn .2s ease}
+@keyframes mIn{from{transform:scale(.94) translateY(10px);opacity:0}to{transform:scale(1) translateY(0);opacity:1}}
+.modal-hdr{padding:20px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.modal-title{font-family:var(--font-head);font-size:19px;font-weight:700;color:var(--white)}
+.close-btn{background:none;border:none;color:var(--text2);font-size:18px;cursor:pointer;line-height:1;width:28px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;transition:all .15s}
+.close-btn:hover{background:rgba(255,77,106,.1);color:var(--red)}
+.modal-body{padding:22px 24px}
+.modal-footer{padding:16px 24px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:10px}
+.btn{padding:9px 20px;border-radius:9px;font-size:14px;font-weight:600;cursor:pointer;border:none;transition:opacity .15s,transform .1s;font-family:var(--font-body)}
+.btn:hover{opacity:.85;transform:translateY(-1px)}
+.btn-primary{background:linear-gradient(135deg,#2a7fd4,var(--accent));color:#fff}
+.btn-ghost{background:var(--bg2);color:var(--text);border:1px solid var(--border)}
+
+/* ─── IMAGE UPLOAD IN MODAL ─── */
+.img-upload-zone{border:2px dashed var(--border2);border-radius:12px;padding:20px;text-align:center;cursor:pointer;transition:all .2s;position:relative;overflow:hidden;margin-bottom:18px}
+.img-upload-zone:hover{border-color:var(--accent);background:var(--accent-dim)}
+.img-upload-zone.has-img{border-style:solid;border-color:var(--border2);padding:0}
+.img-upload-zone img{width:100%;height:180px;object-fit:cover;border-radius:10px;display:block}
+.img-overlay{position:absolute;inset:0;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;border-radius:10px;flex-direction:column;gap:8px}
+.img-upload-zone:hover .img-overlay{display:flex}
+.img-overlay-text{color:#fff;font-size:13px;font-weight:600}
+.img-upload-icon{font-size:32px;margin-bottom:6px;color:var(--text2)}
+.img-upload-hint{font-size:12px;color:var(--text2);margin-top:4px}
+
+.status-opts{display:flex;gap:8px;margin-top:7px}
+.status-opt{flex:1;padding:9px;border-radius:8px;border:2px solid var(--border);cursor:pointer;text-align:center;font-size:12px;font-weight:700;transition:all .15s;background:var(--bg2);color:var(--text2)}
+.status-opt.sel-Good{border-color:var(--green);color:var(--green);background:rgba(34,217,138,.08)}
+.status-opt.sel-Service{border-color:var(--yellow);color:var(--yellow);background:rgba(245,166,35,.08)}
+.status-opt.sel-Repair{border-color:var(--red);color:var(--red);background:rgba(255,77,106,.08)}
+
+.form-textarea{width:100%;padding:10px 13px;background:var(--bg2);border:1px solid var(--border);border-radius:9px;color:var(--text);font-size:13px;font-family:var(--font-body);outline:none;resize:vertical;min-height:75px;transition:border-color .2s}
+.form-textarea:focus{border-color:var(--accent)}
+
+/* ─── REPORT TABLE ─── */
+.table-wrap{background:var(--panel);border:1px solid var(--border);border-radius:13px;overflow:hidden}
+.report-table{width:100%;border-collapse:collapse}
+.report-table th{padding:11px 15px;text-align:left;font-size:11.5px;letter-spacing:.8px;text-transform:uppercase;color:var(--text2);background:var(--bg2);border-bottom:1px solid var(--border);font-weight:700}
+.report-table td{padding:12px 15px;border-bottom:1px solid rgba(26,36,56,.5);font-size:14px;color:var(--text);vertical-align:middle}
+.report-table tr:last-child td{border-bottom:none}
+.report-table tr:hover td{background:rgba(59,158,255,.02)}
+.report-thumb{width:36px;height:36px;border-radius:7px;background:var(--bg2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:16px;overflow:hidden;flex-shrink:0}
+.report-thumb img{width:100%;height:100%;object-fit:cover}
+.td-equip{display:flex;align-items:center;gap:10px}
+
+.filter-row{display:flex;gap:10px;margin-bottom:18px;flex-wrap:wrap}
+.filter-sel{padding:8px 13px;background:var(--panel);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;outline:none;cursor:pointer;font-family:var(--font-body)}
+
+/* ─── LOG ─── */
+.log-list{display:flex;flex-direction:column;gap:8px}
+.log-item{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:13px 16px;display:flex;gap:12px;align-items:flex-start}
+.log-dot{width:9px;height:9px;border-radius:50%;margin-top:5px;flex-shrink:0}
+.log-info{flex:1}
+.log-ttl{font-size:14px;font-weight:500;color:var(--text)}
+.log-meta{font-size:12px;color:var(--text2);margin-top:3px;font-family:var(--font-mono)}
+.log-time{font-size:12px;color:var(--text3);white-space:nowrap;font-family:var(--font-mono)}
+.empty-state{text-align:center;padding:48px;color:var(--text2)}
+.empty-ico{font-size:40px;margin-bottom:12px;opacity:.4}
+
+/* ─── TOAST ─── */
+.toast{position:fixed;top:68px;right:18px;z-index:500;padding:11px 18px;border-radius:10px;font-size:13px;font-weight:500;background:var(--panel);border:1px solid var(--border);box-shadow:0 10px 30px rgba(0,0,0,.5);transform:translateX(130%);transition:transform .3s cubic-bezier(.34,1.56,.64,1);max-width:300px}
+.toast.show{transform:translateX(0)}
+.toast.t-good{border-color:rgba(34,217,138,.3);color:var(--green)}
+.toast.t-warn{border-color:rgba(245,166,35,.3);color:var(--yellow)}
+.toast.t-err{border-color:rgba(255,77,106,.3);color:var(--red)}
+.toast.t-info{border-color:rgba(59,158,255,.3);color:var(--accent)}
+
+/* ─── DELETE / REMOVE BUTTONS ─── */
+.equip-del{width:26px;height:26px;border-radius:6px;background:rgba(255,77,106,.0);border:1px solid transparent;color:transparent;font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;flex-shrink:0}
+.equip-item:hover .equip-del{background:rgba(255,77,106,.1);border-color:rgba(255,77,106,.25);color:var(--red)}
+.equip-del:hover{background:rgba(255,77,106,.22)!important}
+.dept-del-btn{width:28px;height:28px;border-radius:7px;background:transparent;border:1px solid transparent;color:transparent;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s;flex-shrink:0}
+.dept-hdr:hover .dept-del-btn{border-color:rgba(255,77,106,.3);color:rgba(255,77,106,.7)}
+.dept-del-btn:hover{background:rgba(255,77,106,.15)!important;color:var(--red)!important;border-color:rgba(255,77,106,.5)!important}
+
+/* ─── CONFIRM DIALOG ─── */
+.confirm-box{background:var(--panel2);border:1px solid var(--border2);border-radius:16px;width:380px;max-width:95vw;padding:32px;text-align:center;animation:mIn .2s ease}
+.confirm-icon{font-size:40px;margin-bottom:14px}
+.confirm-title{font-family:var(--font-head);font-size:19px;font-weight:700;color:var(--white);margin-bottom:8px}
+.confirm-msg{font-size:14px;color:var(--text2);line-height:1.6;margin-bottom:24px}
+.confirm-btns{display:flex;gap:10px;justify-content:center}
+.btn-danger{background:linear-gradient(135deg,#cc1133,var(--red));color:#fff}
+
+/* ─── ADD DEPT CARD ─── */
+.add-dept-card{background:transparent;border:2px dashed var(--border2);border-radius:14px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 20px;cursor:pointer;transition:all .2s;min-height:170px;color:var(--text3)}
+.add-dept-card:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-dim)}
+.add-dept-ico{font-size:34px;margin-bottom:10px}
+.add-dept-lbl{font-size:14px;font-weight:600}
+
+.hidden{display:none!important}
+@media(max-width:768px){.sidebar{width:170px}.main{margin-left:170px}.stats-grid{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+<div class="bg-grid"></div>
+<div class="bg-glow bg-glow-1"></div>
+<div class="bg-glow bg-glow-2"></div>
+<div class="bg-glow bg-glow-3"></div>
+
+<!-- ═══ LOGIN SCREEN ═══ -->
+<div id="loginScreen" class="auth-screen">
+  <div class="auth-card">
+    <div class="auth-card-top">
+      <div class="hospital-logo">
+        <div class="logo-mark">⚕</div>
+        <div>
+          <div class="logo-text-main">COOPERATIVE HOSPITAL MATARA</div>
+          <div class="logo-text-sub">BIOMEDICAL DEPARTMENT</div>
+        </div>
+      </div>
+      <div class="auth-title">Welcome Back</div>
+      <div class="auth-subtitle">Sign in to access the biomedical equipment portal</div>
+      <div class="auth-tabs" style="margin-top:18px">
+        <div class="auth-tab active" onclick="switchAuth('login')">Sign In</div>
+        <div class="auth-tab" onclick="switchAuth('register')">Register</div>
+      </div>
+    </div>
+    <div class="auth-body">
+      <div class="auth-err" id="loginErr"></div>
+      <div class="auth-success" id="loginSuccess"></div>
+      <div class="form-group">
+        <label class="form-label">Username</label>
+        <input class="form-input" id="liUser" type="text" placeholder="Enter your username" autocomplete="username">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Password</label>
+        <input class="form-input" id="liPass" type="password" placeholder="Enter your password" autocomplete="current-password">
+      </div>
+      <button class="btn-auth" onclick="doLogin()">Sign In →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ REGISTER SCREEN ═══ -->
+<div id="registerScreen" class="auth-screen hidden">
+  <div class="auth-card">
+    <div class="auth-card-top">
+      <div class="hospital-logo">
+        <div class="logo-mark">⚕</div>
+        <div>
+          <div class="logo-text-main">COOPERATIVE HOSPITAL MATARA</div>
+          <div class="logo-text-sub">BIOMEDICAL DEPARTMENT</div>
+        </div>
+      </div>
+      <div class="auth-title">Create Account</div>
+      <div class="auth-subtitle">Register your staff account</div>
+      <div class="auth-tabs" style="margin-top:18px">
+        <div class="auth-tab" onclick="switchAuth('login')">Sign In</div>
+        <div class="auth-tab active" onclick="switchAuth('register')">Register</div>
+      </div>
+    </div>
+    <div class="auth-body">
+      <div class="auth-err" id="regErr"></div>
+      <div class="auth-success" id="regSuccess"></div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">First Name</label>
+          <input class="form-input" id="regFirst" type="text" placeholder="First name">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Last Name</label>
+          <input class="form-input" id="regLast" type="text" placeholder="Last name">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Username</label>
+        <input class="form-input" id="regUser" type="text" placeholder="Choose a username">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Role</label>
+        <select class="form-input" id="regRole">
+          <option value="">Select your role...</option>
+          <option value="admin">Office Incharge (Admin)</option>
+          <option value="technician">Biomedical Technician</option>
+          <option value="hr">HR Manager</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Password</label>
+        <input class="form-input" id="regPass" type="password" placeholder="Create password (min 4 chars)">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Confirm Password</label>
+        <input class="form-input" id="regPass2" type="password" placeholder="Repeat password">
+      </div>
+      <button class="btn-auth" onclick="doRegister()">Create Account →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ APP ═══ -->
+<div id="app">
+  <div class="topbar">
+    <div class="topbar-brand">
+      <div class="topbar-logo">⚕</div>
+      <div class="topbar-name">Cooperative Hospital <span>Matara</span></div>
+    </div>
+    <div class="topbar-user-info">
+      <div class="user-avatar" id="topAvatar">?</div>
+      <div class="user-name" id="topName">-</div>
+      <div class="user-role-badge" id="topBadge">-</div>
+    </div>
+    <button class="btn-logout" onclick="doLogout()">Sign Out</button>
+  </div>
+
+  <div class="sidebar">
+    <div class="nav-section">Main</div>
+    <div class="nav-item active" onclick="showPage('dashboard')"><span class="nav-icon">📊</span> Dashboard</div>
+    <div class="nav-item" onclick="showPage('equipment')"><span class="nav-icon">🔬</span> Departments <span class="nav-count" id="deptCnt">-</span></div>
+    <div class="nav-item" onclick="showPage('report')"><span class="nav-icon">📋</span> Report</div>
+    <div class="nav-item" onclick="showPage('log')"><span class="nav-icon">📝</span> Activity Log</div>
+    <div class="nav-section" style="margin-top:10px">Departments</div>
+    <div id="sidebarDepts"></div>
+  </div>
+
+  <div class="main">
+    <div class="content">
+      <!-- Dashboard -->
+      <div id="page-dashboard">
+        <div class="page-hdr">
+          <div class="page-title">Equipment Dashboard</div>
+          <div class="page-sub" id="dashSub">Cooperative Hospital Matara — Biomedical Department</div>
+        </div>
+        <div class="stats-grid">
+          <div class="stat-card stat-total"><div class="stat-lbl">Total Equipment</div><div class="stat-val" id="sTotal">0</div><div class="stat-ico">🏷</div></div>
+          <div class="stat-card stat-good"><div class="stat-lbl">Good / OK</div><div class="stat-val gv" id="sGood">0</div><div class="stat-ico">✅</div></div>
+          <div class="stat-card stat-svc"><div class="stat-lbl">Needs Service</div><div class="stat-val yv" id="sSvc">0</div><div class="stat-ico">🔧</div></div>
+          <div class="stat-card stat-rep"><div class="stat-lbl">Needs Repair</div><div class="stat-val rv" id="sRep">0</div><div class="stat-ico">🚨</div></div>
+        </div>
+        <div class="dept-grid" id="dashGrid"></div>
+      </div>
+
+      <!-- Equipment -->
+      <div id="page-equipment" class="hidden">
+        <div class="page-hdr">
+          <div class="page-title">All Departments</div>
+          <div class="page-sub">Click equipment to update status · Hover image to change photo</div>
+        </div>
+        <div class="dept-grid" id="equipGrid"></div>
+      </div>
+
+      <!-- Report -->
+      <div id="page-report" class="hidden">
+        <div class="page-hdr"><div class="page-title">Status Report</div><div class="page-sub">Full equipment overview</div></div>
+        <div class="filter-row">
+          <select class="filter-sel" id="fDept" onchange="renderReport()"><option value="all">All Departments</option></select>
+          <select class="filter-sel" id="fStatus" onchange="renderReport()">
+            <option value="all">All Statuses</option>
+            <option value="Good">Good / OK</option>
+            <option value="Service">Needs Service</option>
+            <option value="Repair">Needs Repair</option>
+          </select>
+        </div>
+        <div class="table-wrap">
+          <table class="report-table">
+            <thead><tr><th></th><th>Department</th><th>Equipment</th><th>Asset ID</th><th>Status</th><th>Updated</th><th>Notes</th></tr></thead>
+            <tbody id="reportBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Log -->
+      <div id="page-log" class="hidden">
+        <div class="page-hdr"><div class="page-title">Activity Log</div><div class="page-sub">All status updates and changes</div></div>
+        <div class="log-list" id="logList"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ UPDATE STATUS MODAL ═══ -->
+<div class="overlay" id="updateModal">
+  <div class="modal">
+    <div class="modal-hdr">
+      <div class="modal-title" id="mTitle">Update Equipment</div>
+      <button class="close-btn" onclick="closeModal('updateModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <!-- IMAGE UPLOAD -->
+      <div class="img-upload-zone" id="imgZone" onclick="triggerImgUpload('editImgInput')">
+        <div id="imgZonePlaceholder">
+          <div class="img-upload-icon">📷</div>
+          <div style="font-size:13px;color:var(--text2);font-weight:600">Click to upload machine photo</div>
+          <div class="img-upload-hint">JPG, PNG — recommended 300×200px</div>
+        </div>
+        <img id="imgPreview" style="display:none;width:100%;height:180px;object-fit:cover;border-radius:10px">
+        <div class="img-overlay" id="imgOverlay">
+          <div style="font-size:28px">📷</div>
+          <div class="img-overlay-text">Change Photo</div>
+        </div>
+      </div>
+      <input type="file" id="editImgInput" accept="image/*" style="display:none" onchange="handleImgUpload(this,'imgPreview','imgZone','imgZonePlaceholder')">
+
+      <div style="display:flex;gap:12px;align-items:center;margin-bottom:18px">
+        <div style="font-size:30px" id="mEquipIco"></div>
+        <div>
+          <div style="font-size:15px;font-weight:600;color:var(--white)" id="mEquipNm"></div>
+          <div style="font-family:var(--font-mono);font-size:11px;color:var(--text2)" id="mEquipId"></div>
+        </div>
+      </div>
+
+      <label class="form-label">Set Condition Status</label>
+      <div class="status-opts">
+        <div class="status-opt" onclick="selStatus('Good')">✅ Good / OK</div>
+        <div class="status-opt" onclick="selStatus('Service')">🔧 Need Service</div>
+        <div class="status-opt" onclick="selStatus('Repair')">🚨 Need Repair</div>
+      </div>
+      <div style="margin-top:15px">
+        <label class="form-label" style="margin-bottom:6px">Remarks / Notes</label>
+        <textarea class="form-textarea" id="mNotes" placeholder="Describe issue, action taken, or leave blank..."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('updateModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveStatus()">Save Update</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ ADD EQUIPMENT MODAL ═══ -->
+<div class="overlay" id="addModal">
+  <div class="modal">
+    <div class="modal-hdr">
+      <div class="modal-title">Add New Equipment</div>
+      <button class="close-btn" onclick="closeModal('addModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <!-- IMAGE UPLOAD -->
+      <div class="img-upload-zone" id="addImgZone" onclick="triggerImgUpload('addImgInput')">
+        <div id="addImgPlaceholder">
+          <div class="img-upload-icon">📷</div>
+          <div style="font-size:13px;color:var(--text2);font-weight:600">Add machine photo (optional)</div>
+          <div class="img-upload-hint">Click to upload image</div>
+        </div>
+        <img id="addImgPreview" style="display:none;width:100%;height:160px;object-fit:cover;border-radius:10px">
+        <div class="img-overlay" id="addImgOverlay">
+          <div style="font-size:28px">📷</div>
+          <div class="img-overlay-text">Change Photo</div>
+        </div>
+      </div>
+      <input type="file" id="addImgInput" accept="image/*" style="display:none" onchange="handleImgUpload(this,'addImgPreview','addImgZone','addImgPlaceholder')">
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Department</label>
+          <select class="form-input" id="addDept"></select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Icon (Emoji)</label>
+          <input class="form-input" id="addIco" type="text" maxlength="4" value="🔬" placeholder="🔬">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Equipment Name</label>
+        <input class="form-input" id="addNm" type="text" placeholder="e.g. Ventilator, ECG Machine...">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Initial Status</label>
+        <select class="form-input" id="addSt">
+          <option value="Good">Good / OK</option>
+          <option value="Service">Needs Service</option>
+          <option value="Repair">Needs Repair</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('addModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveNewEquip()">Add Equipment</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ CONFIRM DIALOG ═══ -->
+<div class="overlay" id="confirmModal">
+  <div class="confirm-box">
+    <div class="confirm-icon" id="confirmIcon">⚠️</div>
+    <div class="confirm-title" id="confirmTitle">Are you sure?</div>
+    <div class="confirm-msg" id="confirmMsg">This action cannot be undone.</div>
+    <div class="confirm-btns">
+      <button class="btn btn-ghost" onclick="closeModal('confirmModal')">Cancel</button>
+      <button class="btn btn-danger" id="confirmOkBtn">Delete</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ ADD DEPARTMENT MODAL ═══ -->
+<div class="overlay" id="addDeptModal">
+  <div class="modal">
+    <div class="modal-hdr">
+      <div class="modal-title">Add New Department</div>
+      <button class="close-btn" onclick="closeModal('addDeptModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Short Name</label>
+          <input class="form-input" id="deptShortNm" type="text" placeholder="e.g. ICU, WARD3" maxlength="12">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Icon (Emoji)</label>
+          <input class="form-input" id="deptIco" type="text" maxlength="4" value="🏥" placeholder="🏥">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Full Department Name</label>
+        <input class="form-input" id="deptFullNm" type="text" placeholder="e.g. Intensive Care Unit">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('addDeptModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveNewDept()">Add Department</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ══════════════════════════════════════════
+// DATA STORE (localStorage-backed)
+// ══════════════════════════════════════════
+function loadUsers() {
+  try { return JSON.parse(localStorage.getItem('bhm_users') || '[]'); } catch { return []; }
+}
+function saveUsers(u) { localStorage.setItem('bhm_users', JSON.stringify(u)); }
+function loadDepts() {
+  try {
+    const d = localStorage.getItem('bhm_depts');
+    if (d) return JSON.parse(d);
+  } catch {}
+  return getDefaultDepts();
+}
+function saveDepts() { localStorage.setItem('bhm_depts', JSON.stringify(departments)); }
+function loadLog() {
+  try { return JSON.parse(localStorage.getItem('bhm_log') || '[]'); } catch { return []; }
+}
+function saveLog() { localStorage.setItem('bhm_log', JSON.stringify(activityLog)); }
+
+function getDefaultDepts() {
+  return [
+    { id:'etu', name:'ETU', full:'Emergency Treatment Unit', icon:'🚑', equipment:[
+      {id:'ETU-001',name:'Patient Monitor',icon:'💻',status:'Good',notes:'',updated:'',img:''},
+      {id:'ETU-002',name:'ECG Machine',icon:'📈',status:'Service',notes:'Electrode pads worn out',updated:'',img:''},
+      {id:'ETU-003',name:'Defibrillator',icon:'⚡',status:'Good',notes:'',updated:'',img:''},
+      {id:'ETU-004',name:'Suction Machine',icon:'🌀',status:'Repair',notes:'Motor failure',updated:'',img:''},
+      {id:'ETU-005',name:'Pulse Oximeter',icon:'🩸',status:'Good',notes:'',updated:'',img:''},
+      {id:'ETU-006',name:'IV Infusion Pump',icon:'💉',status:'Good',notes:'',updated:'',img:''},
+    ]},
+    { id:'ot', name:'OT', full:'Operating Theatre', icon:'🔪', equipment:[
+      {id:'OT-001',name:'Anesthesia Machine',icon:'😮‍💨',status:'Good',notes:'',updated:'',img:''},
+      {id:'OT-002',name:'Surgical Light',icon:'💡',status:'Service',notes:'Bulb replacement needed',updated:'',img:''},
+      {id:'OT-003',name:'Patient Monitor',icon:'💻',status:'Good',notes:'',updated:'',img:''},
+      {id:'OT-004',name:'Electrocautery Unit',icon:'🔥',status:'Good',notes:'',updated:'',img:''},
+      {id:'OT-005',name:'Suction Pump',icon:'🌀',status:'Good',notes:'',updated:'',img:''},
+    ]},
+    { id:'newblock', name:'NEW BLOCK', full:'New Block Ward', icon:'🏢', equipment:[
+      {id:'NB-001',name:'Ventilator',icon:'🫁',status:'Good',notes:'',updated:'',img:''},
+      {id:'NB-002',name:'Patient Monitor',icon:'💻',status:'Good',notes:'',updated:'',img:''},
+      {id:'NB-003',name:'Infusion Pump',icon:'💉',status:'Repair',notes:'Alarm fault',updated:'',img:''},
+    ]},
+    { id:'newroom', name:'NEW ROOM', full:'New Room Ward', icon:'🛏️', equipment:[
+      {id:'NR-001',name:'ECG Machine',icon:'📈',status:'Good',notes:'',updated:'',img:''},
+      {id:'NR-002',name:'Blood Pressure Monitor',icon:'🩺',status:'Service',notes:'Calibration due',updated:'',img:''},
+      {id:'NR-003',name:'Pulse Oximeter',icon:'🩸',status:'Good',notes:'',updated:'',img:''},
+    ]},
+    { id:'channel', name:'CHANNEL', full:'Channel Clinic', icon:'🩻', equipment:[
+      {id:'CH-001',name:'Ultrasound Machine',icon:'📡',status:'Good',notes:'',updated:'',img:''},
+      {id:'CH-002',name:'ECG Machine',icon:'📈',status:'Good',notes:'',updated:'',img:''},
+      {id:'CH-003',name:'Blood Glucose Meter',icon:'🩸',status:'Good',notes:'',updated:'',img:''},
+    ]},
+    { id:'ocu', name:'OCU', full:'Observation Care Unit', icon:'👁', equipment:[
+      {id:'OCU-001',name:'Patient Monitor',icon:'💻',status:'Good',notes:'',updated:'',img:''},
+      {id:'OCU-002',name:'Defibrillator',icon:'⚡',status:'Service',notes:'Battery check needed',updated:'',img:''},
+      {id:'OCU-003',name:'Oxygen Concentrator',icon:'💨',status:'Good',notes:'',updated:'',img:''},
+      {id:'OCU-004',name:'Suction Machine',icon:'🌀',status:'Good',notes:'',updated:'',img:''},
+    ]},
+    { id:'eye', name:'EYE SECTION', full:'Ophthalmology Section', icon:'👁️', equipment:[
+      {id:'EYE-001',name:'Slit Lamp',icon:'🔦',status:'Good',notes:'',updated:'',img:''},
+      {id:'EYE-002',name:'Fundus Camera',icon:'📷',status:'Good',notes:'',updated:'',img:''},
+      {id:'EYE-003',name:'Auto Refractometer',icon:'🔭',status:'Repair',notes:'Joystick faulty',updated:'',img:''},
+      {id:'EYE-004',name:'Tonometer',icon:'🎯',status:'Good',notes:'',updated:'',img:''},
+    ]},
+    { id:'lab', name:'LABORATORY', full:'Clinical Laboratory', icon:'🧪', equipment:[
+      {id:'LAB-001',name:'Hematology Analyzer',icon:'🔬',status:'Good',notes:'',updated:'',img:''},
+      {id:'LAB-002',name:'Biochemistry Analyzer',icon:'⚗️',status:'Service',notes:'Reagent refill needed',updated:'',img:''},
+      {id:'LAB-003',name:'Centrifuge',icon:'🔄',status:'Good',notes:'',updated:'',img:''},
+      {id:'LAB-004',name:'Autoclave',icon:'🫙',status:'Good',notes:'',updated:'',img:''},
+    ]},
+    { id:'xray', name:'X-RAY', full:'Radiology Department', icon:'🩻', equipment:[
+      {id:'XR-001',name:'X-Ray Machine',icon:'☢️',status:'Good',notes:'',updated:'',img:''},
+      {id:'XR-002',name:'CR System',icon:'🖥️',status:'Good',notes:'',updated:'',img:''},
+    ]},
+    { id:'pharmacy', name:'PHARMACY', full:'Pharmacy', icon:'💊', equipment:[
+      {id:'PH-001',name:'Tablet Counter',icon:'💊',status:'Good',notes:'',updated:'',img:''},
+      {id:'PH-002',name:'Vaccine Refrigerator',icon:'❄️',status:'Good',notes:'',updated:'',img:''},
+      {id:'PH-003',name:'Label Printer',icon:'🖨️',status:'Service',notes:'Ribbon low',updated:'',img:''},
+    ]},
+  ];
+}
+
+let departments = loadDepts();
+let activityLog = loadLog();
+let currentUser = null;
+let editTarget = null; // {deptId, equipId}
+let selSt = null;
+let pendingImg = null; // base64 for edit modal
+let pendingAddImg = null; // base64 for add modal
+
+// ══════════════════════════════════════════
+// AUTH
+// ══════════════════════════════════════════
+function switchAuth(mode) {
+  document.getElementById('loginScreen').classList.toggle('hidden', mode !== 'login');
+  document.getElementById('registerScreen').classList.toggle('hidden', mode !== 'register');
+}
+
+function doRegister() {
+  const first = document.getElementById('regFirst').value.trim();
+  const last  = document.getElementById('regLast').value.trim();
+  const user  = document.getElementById('regUser').value.trim().toLowerCase();
+  const role  = document.getElementById('regRole').value;
+  const pass  = document.getElementById('regPass').value;
+  const pass2 = document.getElementById('regPass2').value;
+  const err = document.getElementById('regErr');
+  const suc = document.getElementById('regSuccess');
+  err.style.display='none'; suc.style.display='none';
+
+  if (!first||!last||!user||!role||!pass||!pass2) { showErr('regErr','All fields are required.'); return; }
+  if (pass.length < 4) { showErr('regErr','Password must be at least 4 characters.'); return; }
+  if (pass !== pass2) { showErr('regErr','Passwords do not match.'); return; }
+  if (!/^[a-z0-9_]+$/.test(user)) { showErr('regErr','Username: only letters, numbers, underscore.'); return; }
+
+  const users = loadUsers();
+  if (users.find(u => u.username === user)) { showErr('regErr','Username already taken.'); return; }
+  users.push({ username:user, password:pass, role, firstName:first, lastName:last, createdAt:new Date().toISOString() });
+  saveUsers(users);
+  suc.textContent = 'Account created! You can now sign in.';
+  suc.style.display = 'block';
+  setTimeout(() => { switchAuth('login'); }, 1800);
+}
+
+function doLogin() {
+  const user = document.getElementById('liUser').value.trim().toLowerCase();
+  const pass = document.getElementById('liPass').value;
+  const err = document.getElementById('loginErr');
+  err.style.display='none';
+  if (!user||!pass) { showErr('loginErr','Please enter username and password.'); return; }
+  const users = loadUsers();
+  const found = users.find(u => u.username === user && u.password === pass);
+  if (!found) { showErr('loginErr','Incorrect username or password.'); return; }
+  currentUser = found;
+  launchApp();
+}
+
+function doLogout() {
+  currentUser = null;
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('loginScreen').classList.remove('hidden');
+  document.getElementById('registerScreen').classList.add('hidden');
+  document.getElementById('liUser').value='';
+  document.getElementById('liPass').value='';
+}
+
+function showErr(id, msg) {
+  const el = document.getElementById(id);
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+
+// ══════════════════════════════════════════
+// APP INIT
+// ══════════════════════════════════════════
+const ROLE_LABEL = { admin:'Office Incharge', technician:'Technician', hr:'HR Manager' };
+const ROLE_CLASS = { admin:'role-admin', technician:'role-technician', hr:'role-hr' };
+
+function launchApp() {
+  document.getElementById('loginScreen').classList.add('hidden');
+  document.getElementById('registerScreen').classList.add('hidden');
+  document.getElementById('app').style.display = 'block';
+  // Topbar
+  document.getElementById('topAvatar').textContent = (currentUser.firstName[0]||'?').toUpperCase();
+  document.getElementById('topName').textContent = currentUser.firstName + ' ' + currentUser.lastName;
+  document.getElementById('topBadge').textContent = ROLE_LABEL[currentUser.role] || currentUser.role;
+  document.getElementById('topBadge').className = 'user-role-badge ' + (ROLE_CLASS[currentUser.role]||'role-hr');
+  buildSidebar();
+  showPage('dashboard');
+}
+
+function buildSidebar() {
+  const nav = document.getElementById('sidebarDepts');
+  nav.innerHTML = departments.map(d =>
+    `<div class="nav-item" onclick="goDept('${d.id}')">${d.icon} <span style="margin-left:4px">${d.name}</span></div>`
+  ).join('');
+  document.getElementById('deptCnt').textContent = departments.length;
+}
+
+// ══════════════════════════════════════════
+// PAGE ROUTING
+// ══════════════════════════════════════════
+const PAGES = ['dashboard','equipment','report','log'];
+function showPage(p) {
+  PAGES.forEach(pp => document.getElementById('page-'+pp).classList.toggle('hidden', pp !== p));
+  document.querySelectorAll('.sidebar .nav-item').forEach((el,i) => {
+    if (i < 4) el.classList.toggle('active', i === PAGES.indexOf(p));
+    else el.classList.remove('active');
+  });
+  if (p==='dashboard') renderDashboard();
+  if (p==='equipment') renderEquipment();
+  if (p==='report') renderReport();
+  if (p==='log') renderLog();
+}
+
+function goDept(id) {
+  showPage('equipment');
+  setTimeout(() => {
+    const el = document.getElementById('dept-card-'+id);
+    if (el) el.scrollIntoView({behavior:'smooth',block:'start'});
+  }, 60);
+}
+
+// ══════════════════════════════════════════
+// STATS
+// ══════════════════════════════════════════
+function calcStats() {
+  let t=0,g=0,s=0,r=0;
+  departments.forEach(d => d.equipment.forEach(e => { t++; if(e.status==='Good')g++; else if(e.status==='Service')s++; else r++; }));
+  return {t,g,s,r};
+}
+function updateStats() {
+  const {t,g,s,r} = calcStats();
+  document.getElementById('sTotal').textContent=t;
+  document.getElementById('sGood').textContent=g;
+  document.getElementById('sSvc').textContent=s;
+  document.getElementById('sRep').textContent=r;
+}
+
+// ══════════════════════════════════════════
+// RENDER HELPERS
+// ══════════════════════════════════════════
+function thumbHtml(e, deptId) {
+  const canEdit = canEditRole();
+  if (e.img) {
+    return `<div class="equip-thumb" ${canEdit?`onclick="event.stopPropagation();openImgOnly('${deptId}','${e.id}')" title="Click to change photo"`:''}><img src="${e.img}" alt="${e.name}">${canEdit?`<div class="equip-thumb-upload">📷</div>`:''}</div>`;
+  }
+  return `<div class="equip-thumb" ${canEdit?`onclick="event.stopPropagation();openImgOnly('${deptId}','${e.id}')" title="Click to add photo"`:''}>${e.icon}${canEdit?`<div class="equip-thumb-upload">📷</div>`:''}</div>`;
+}
+
+function equipItemHtml(e, d) {
+  const canEdit = canEditRole();
+  return `
+  <div class="equip-item" onclick="${canEdit?`openEditModal('${d.id}','${e.id}')`:''}" style="${canEdit?'cursor:pointer':'cursor:default'}">
+    ${thumbHtml(e, d.id)}
+    <div class="equip-info">
+      <div class="equip-nm">${e.name}</div>
+      <div class="equip-id">#${e.id}${e.updated?' · '+e.updated:''}</div>
+    </div>
+    <div class="status-pill pill-${e.status}">${e.status==='Good'?'✅ Good':e.status==='Service'?'🔧 Service':'🚨 Repair'}</div>
+    ${canEdit?`<button class="equip-del" title="Remove equipment" onclick="event.stopPropagation();confirmDeleteEquip('${d.id}','${e.id}','${e.name.replace(/'/g,"\\'")}')">✕</button>`:''}
+  </div>`;
+}
+
+function deptCardHtml(d, mini) {
+  const good=d.equipment.filter(e=>e.status==='Good').length;
+  const svc=d.equipment.filter(e=>e.status==='Service').length;
+  const rep=d.equipment.filter(e=>e.status==='Repair').length;
+  const items = mini ? d.equipment.slice(0,4) : d.equipment;
+  const more = mini && d.equipment.length>4 ? `<div style="padding:7px 14px;font-size:12px;color:var(--text3)">+${d.equipment.length-4} more — view all departments</div>` : '';
+  const canEdit = canEditRole();
+  return `
+  <div class="dept-card" id="dept-card-${d.id}">
+    <div class="dept-hdr">
+      <span class="dept-ico">${d.icon}</span>
+      <div class="dept-nm">${d.name}<small>${d.full}</small></div>
+      <div class="dept-dots">
+        ${good?`<div class="dot dot-g" title="${good} good"></div>`:''}
+        ${svc?`<div class="dot dot-s" title="${svc} need service"></div>`:''}
+        ${rep?`<div class="dot dot-r" title="${rep} need repair"></div>`:''}
+      </div>
+      ${canEdit?`<button class="dept-del-btn" title="Remove department" onclick="confirmDeleteDept('${d.id}','${d.name.replace(/'/g,"\\'")}')">🗑</button>`:''}
+    </div>
+    <div class="equip-list">${items.length ? items.map(e=>equipItemHtml(e,d)).join('') : `<div style="padding:14px 18px;font-size:13px;color:var(--text3)">No equipment yet.</div>`}${more}</div>
+    ${canEdit?`<div class="add-btn" onclick="openAddModal('${d.id}')">＋ Add Equipment</div>`:''}
+  </div>`;
+}
+
+// ══════════════════════════════════════════
+// PAGES
+// ══════════════════════════════════════════
+function renderDashboard() {
+  updateStats();
+  document.getElementById('dashSub').textContent = `${departments.length} departments · ${new Date().toLocaleString()}`;
+  document.getElementById('dashGrid').innerHTML = departments.map(d=>deptCardHtml(d,true)).join('');
+}
+function renderEquipment() {
+  const addCard = canEditRole() ? `<div class="add-dept-card" onclick="openAddDeptModal()"><div class="add-dept-ico">🏥</div><div class="add-dept-lbl">Add New Department</div></div>` : '';
+  document.getElementById('equipGrid').innerHTML = departments.map(d=>deptCardHtml(d,false)).join('') + addCard;
+}
+function renderReport() {
+  const fd = document.getElementById('fDept');
+  const curVal = fd.value;
+  fd.innerHTML = '<option value="all">All Departments</option>';
+  departments.forEach(d => { const o=document.createElement('option'); o.value=d.id; o.textContent=d.name+' — '+d.full; fd.appendChild(o); });
+  if (curVal && fd.querySelector(`option[value="${curVal}"]`)) fd.value = curVal;
+  const dv = fd.value, sv = document.getElementById('fStatus').value;
+  let rows = [];
+  departments.forEach(d => {
+    if (dv!=='all' && d.id!==dv) return;
+    d.equipment.forEach(e => {
+      if (sv!=='all' && e.status!==sv) return;
+      rows.push({dept:d.name, ...e});
+    });
+  });
+  document.getElementById('reportBody').innerHTML = rows.length === 0
+    ? `<tr><td colspan="7" style="text-align:center;padding:30px;color:var(--text2)">No equipment found for selected filters.</td></tr>`
+    : rows.map(r => `<tr>
+        <td><div class="report-thumb">${r.img?`<img src="${r.img}" alt="${r.name}">`:r.icon}</div></td>
+        <td>${r.dept}</td>
+        <td>${r.name}</td>
+        <td style="font-family:var(--font-mono);font-size:11px;color:var(--text2)">#${r.id}</td>
+        <td><span class="status-pill pill-${r.status}">${r.status==='Good'?'✅ Good':r.status==='Service'?'🔧 Service':'🚨 Repair'}</span></td>
+        <td style="font-size:12px;color:var(--text2)">${r.updated||'—'}</td>
+        <td style="font-size:12px;color:var(--text2);max-width:160px">${r.notes||'—'}</td>
+      </tr>`).join('');
+}
+function renderLog() {
+  if (activityLog.length === 0) {
+    document.getElementById('logList').innerHTML = `<div class="empty-state"><div class="empty-ico">📝</div>No activity yet. Update equipment status to see logs here.</div>`;
+    return;
+  }
+  document.getElementById('logList').innerHTML = activityLog.map(l => {
+    const c = l.to==='Good'?'var(--green)':l.to==='Service'?'var(--yellow)':'var(--red)';
+    return `<div class="log-item">
+      <div class="log-dot" style="background:${c}"></div>
+      <div class="log-info">
+        <div class="log-ttl"><b>${l.equip}</b> <span style="color:var(--text2)">in</span> ${l.dept} → <span style="color:${c};font-weight:700">${l.to}</span></div>
+        <div class="log-meta">#${l.id} · by ${l.user}${l.notes?' · '+l.notes:''}</div>
+      </div>
+      <div class="log-time">${l.time}</div>
+    </div>`;
+  }).join('');
+}
+
+// ══════════════════════════════════════════
+// IMAGE UPLOAD
+// ══════════════════════════════════════════
+function triggerImgUpload(inputId) {
+  document.getElementById(inputId).click();
+}
+
+function handleImgUpload(input, previewId, zoneId, placeholderId) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const b64 = e.target.result;
+    const preview = document.getElementById(previewId);
+    const zone = document.getElementById(zoneId);
+    const ph = document.getElementById(placeholderId);
+    preview.src = b64;
+    preview.style.display = 'block';
+    if (ph) ph.style.display = 'none';
+    zone.classList.add('has-img');
+    if (previewId === 'imgPreview') pendingImg = b64;
+    if (previewId === 'addImgPreview') pendingAddImg = b64;
+  };
+  reader.readAsDataURL(file);
+}
+
+// Quick image-only update from thumbnail hover
+function openImgOnly(deptId, equipId) {
+  openEditModal(deptId, equipId);
+}
+
+// ══════════════════════════════════════════
+// MODALS
+// ══════════════════════════════════════════
+function openEditModal(deptId, equipId) {
+  if (!canEditRole()) { showToast('You have view-only access.','warn'); return; }
+  const dept = departments.find(d=>d.id===deptId);
+  const equip = dept.equipment.find(e=>e.id===equipId);
+  editTarget = {deptId, equipId};
+  selSt = equip.status;
+  pendingImg = equip.img || null;
+
+  document.getElementById('mTitle').textContent = dept.name + ' — Update';
+  document.getElementById('mEquipNm').textContent = equip.name;
+  document.getElementById('mEquipId').textContent = '#' + equip.id;
+  document.getElementById('mEquipIco').textContent = equip.icon;
+  document.getElementById('mNotes').value = equip.notes || '';
+
+  // Reset image zone
+  const preview = document.getElementById('imgPreview');
+  const ph = document.getElementById('imgZonePlaceholder');
+  const zone = document.getElementById('imgZone');
+  document.getElementById('editImgInput').value = '';
+  if (equip.img) {
+    preview.src = equip.img;
+    preview.style.display = 'block';
+    ph.style.display = 'none';
+    zone.classList.add('has-img');
+  } else {
+    preview.src = '';
+    preview.style.display = 'none';
+    ph.style.display = 'block';
+    zone.classList.remove('has-img');
+  }
+
+  // Status buttons
+  document.querySelectorAll('.status-opt').forEach(el => {
+    el.className = 'status-opt';
+    const s = el.textContent.includes('Good')?'Good':el.textContent.includes('Service')?'Service':'Repair';
+    if (s === equip.status) el.classList.add('sel-'+s);
+  });
+
+  document.getElementById('updateModal').classList.add('open');
+}
+
+function selStatus(s) {
+  selSt = s;
+  document.querySelectorAll('.status-opt').forEach(el => {
+    el.className = 'status-opt';
+    const es = el.textContent.includes('Good')?'Good':el.textContent.includes('Service')?'Service':'Repair';
+    if (es === s) el.classList.add('sel-'+s);
+  });
+}
+
+function saveStatus() {
+  if (!editTarget) return;
+  const dept = departments.find(d=>d.id===editTarget.deptId);
+  const equip = dept.equipment.find(e=>e.id===editTarget.equipId);
+  const old = equip.status;
+  equip.status = selSt || equip.status;
+  equip.notes = document.getElementById('mNotes').value;
+  equip.updated = new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
+  if (pendingImg !== null) equip.img = pendingImg;
+  saveDepts();
+  activityLog.unshift({
+    dept:dept.name, equip:equip.name, id:equip.id,
+    from:old, to:equip.status, notes:equip.notes,
+    user:currentUser.firstName+' '+currentUser.lastName, time:new Date().toLocaleString()
+  });
+  saveLog();
+  closeModal('updateModal');
+  refreshAll();
+  const t = equip.status==='Good'?'good':equip.status==='Service'?'warn':'err';
+  showToast(`${equip.name} → ${equip.status}`, t);
+}
+
+function openAddModal(deptId) {
+  pendingAddImg = null;
+  const sel = document.getElementById('addDept');
+  sel.innerHTML = departments.map(d=>`<option value="${d.id}" ${d.id===deptId?'selected':''}>${d.name} — ${d.full}</option>`).join('');
+  document.getElementById('addNm').value='';
+  document.getElementById('addIco').value='🔬';
+  document.getElementById('addSt').value='Good';
+  document.getElementById('addImgInput').value='';
+  const ap=document.getElementById('addImgPreview'), az=document.getElementById('addImgZone'), aph=document.getElementById('addImgPlaceholder');
+  ap.src=''; ap.style.display='none'; aph.style.display='block'; az.classList.remove('has-img');
+  document.getElementById('addModal').classList.add('open');
+}
+
+function saveNewEquip() {
+  const deptId = document.getElementById('addDept').value;
+  const nm = document.getElementById('addNm').value.trim();
+  const ico = document.getElementById('addIco').value.trim()||'🔬';
+  const st = document.getElementById('addSt').value;
+  if (!nm) { showToast('Enter equipment name!','warn'); return; }
+  const dept = departments.find(d=>d.id===deptId);
+  const prefix = deptId.slice(0,3).toUpperCase();
+  const newId = prefix+'-'+String(dept.equipment.length+1).padStart(3,'0');
+  dept.equipment.push({id:newId, name:nm, icon:ico, status:st, notes:'', updated:new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}), img:pendingAddImg||''});
+  saveDepts();
+  activityLog.unshift({
+    dept:dept.name, equip:nm, id:newId,
+    from:'—', to:st, notes:'New equipment added',
+    user:currentUser.firstName+' '+currentUser.lastName, time:new Date().toLocaleString()
+  });
+  saveLog();
+  closeModal('addModal');
+  refreshAll();
+  showToast(`${nm} added to ${dept.name}!`,'good');
+}
+
+function closeModal(id) {
+  document.getElementById(id).classList.remove('open');
+  editTarget = null;
+}
+
+// ══════════════════════════════════════════
+// DELETE EQUIPMENT
+// ══════════════════════════════════════════
+function confirmDeleteEquip(deptId, equipId, equipName) {
+  document.getElementById('confirmIcon').textContent = '🗑️';
+  document.getElementById('confirmTitle').textContent = 'Remove Equipment?';
+  document.getElementById('confirmMsg').textContent = `"${equipName}" will be permanently removed from this department.`;
+  document.getElementById('confirmOkBtn').textContent = 'Yes, Remove';
+  document.getElementById('confirmOkBtn').onclick = () => {
+    const dept = departments.find(d=>d.id===deptId);
+    const equip = dept.equipment.find(e=>e.id===equipId);
+    dept.equipment = dept.equipment.filter(e=>e.id!==equipId);
+    saveDepts();
+    activityLog.unshift({
+      dept:dept.name, equip:equip.name, id:equip.id,
+      from:equip.status, to:'Removed', notes:'Equipment removed',
+      user:currentUser.firstName+' '+currentUser.lastName, time:new Date().toLocaleString()
+    });
+    saveLog();
+    closeModal('confirmModal');
+    refreshAll();
+    showToast(`${equip.name} removed`, 'err');
+  };
+  document.getElementById('confirmModal').classList.add('open');
+}
+
+// ══════════════════════════════════════════
+// DELETE DEPARTMENT
+// ══════════════════════════════════════════
+function confirmDeleteDept(deptId, deptName) {
+  const dept = departments.find(d=>d.id===deptId);
+  const count = dept ? dept.equipment.length : 0;
+  document.getElementById('confirmIcon').textContent = '🏥';
+  document.getElementById('confirmTitle').textContent = 'Remove Department?';
+  document.getElementById('confirmMsg').textContent = `"${deptName}" and all ${count} equipment record${count!==1?'s':''} inside it will be permanently deleted.`;
+  document.getElementById('confirmOkBtn').textContent = 'Yes, Delete Department';
+  document.getElementById('confirmOkBtn').onclick = () => {
+    departments = departments.filter(d=>d.id!==deptId);
+    saveDepts();
+    activityLog.unshift({
+      dept:deptName, equip:'—', id:'—',
+      from:'Active', to:'Removed', notes:'Department deleted',
+      user:currentUser.firstName+' '+currentUser.lastName, time:new Date().toLocaleString()
+    });
+    saveLog();
+    closeModal('confirmModal');
+    buildSidebar();
+    refreshAll();
+    showToast(`${deptName} department removed`, 'err');
+  };
+  document.getElementById('confirmModal').classList.add('open');
+}
+
+// ══════════════════════════════════════════
+// ADD DEPARTMENT
+// ══════════════════════════════════════════
+function openAddDeptModal() {
+  document.getElementById('deptShortNm').value = '';
+  document.getElementById('deptFullNm').value = '';
+  document.getElementById('deptIco').value = '🏥';
+  document.getElementById('addDeptModal').classList.add('open');
+}
+
+function saveNewDept() {
+  const shortNm = document.getElementById('deptShortNm').value.trim().toUpperCase();
+  const fullNm  = document.getElementById('deptFullNm').value.trim();
+  const ico     = document.getElementById('deptIco').value.trim() || '🏥';
+  if (!shortNm || !fullNm) { showToast('Fill in both name fields!', 'warn'); return; }
+  const id = shortNm.toLowerCase().replace(/[^a-z0-9]/g,'') + '_' + Date.now();
+  if (departments.find(d=>d.name===shortNm)) { showToast('A department with this name already exists.', 'warn'); return; }
+  departments.push({ id, name:shortNm, full:fullNm, icon:ico, equipment:[] });
+  saveDepts();
+  activityLog.unshift({
+    dept:shortNm, equip:'—', id:'—',
+    from:'—', to:'Created', notes:'New department added',
+    user:currentUser.firstName+' '+currentUser.lastName, time:new Date().toLocaleString()
+  });
+  saveLog();
+  closeModal('addDeptModal');
+  buildSidebar();
+  refreshAll();
+  showToast(`${shortNm} department added!`, 'good');
+}
+
+// ══════════════════════════════════════════
+// UTILS
+// ══════════════════════════════════════════
+function canEditRole() {
+  return currentUser && (currentUser.role==='admin' || currentUser.role==='technician');
+}
+function refreshAll() {
+  updateStats();
+  const cur = PAGES.find(p => !document.getElementById('page-'+p).classList.contains('hidden'));
+  if (cur==='dashboard') renderDashboard();
+  if (cur==='equipment') renderEquipment();
+  if (cur==='report') renderReport();
+}
+function showToast(msg, type) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'toast t-'+(type||'info')+' show';
+  setTimeout(() => el.classList.remove('show'), 3200);
+}
+
+// Keyboard: close modal on Escape
+document.addEventListener('keydown', e => {
+  if (e.key==='Escape') {
+    document.querySelectorAll('.overlay.open').forEach(m => m.classList.remove('open'));
+  }
+  if (e.key==='Enter' && !document.getElementById('loginScreen').classList.contains('hidden')) doLogin();
+  if (e.key==='Enter' && !document.getElementById('registerScreen').classList.contains('hidden')) doRegister();
+});
+</script>
+</body>
+</html>
