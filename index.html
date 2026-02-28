@@ -247,7 +247,7 @@ select.form-input option{background:var(--panel)}
 <div class="bg-glow bg-glow-3"></div>
 
 <!-- ═══ LOGIN SCREEN ═══ -->
-<div id="loginScreen" class="auth-screen">
+<div id="loginScreen" class="auth-screen hidden">
   <div class="auth-card">
     <div class="auth-card-top">
       <div class="hospital-logo">
@@ -275,7 +275,7 @@ select.form-input option{background:var(--panel)}
         <label class="form-label">Password</label>
         <input class="form-input" id="liPass" type="password" placeholder="Enter your password" autocomplete="current-password">
       </div>
-      <button class="btn-auth" onclick="doLogin()">Sign In →</button>
+      <button class="btn-auth" id="loginBtn" onclick="doLogin()">Sign In →</button>
     </div>
   </div>
 </div>
@@ -332,7 +332,7 @@ select.form-input option{background:var(--panel)}
         <label class="form-label">Confirm Password</label>
         <input class="form-input" id="regPass2" type="password" placeholder="Repeat password">
       </div>
-      <button class="btn-auth" onclick="doRegister()">Create Account →</button>
+      <button class="btn-auth" id="regBtn" onclick="doRegister()">Create Account →</button>
     </div>
   </div>
 </div>
@@ -564,27 +564,57 @@ select.form-input option{background:var(--panel)}
 
 <div class="toast" id="toast"></div>
 
+<div id="loadingOverlay" style="position:fixed;inset:0;background:#060910;z-index:999;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px">
+  <div style="font-size:40px">⚕</div>
+  <div style="font-family:'Plus Jakarta Sans',sans-serif;font-size:14px;color:#3b9eff;letter-spacing:2px">CONNECTING...</div>
+  <div style="width:200px;height:2px;background:#1a2438;border-radius:2px;overflow:hidden">
+    <div style="height:100%;background:linear-gradient(90deg,#3b9eff,#22d98a);animation:loadBar 1.5s ease-in-out infinite" id="loadBar"></div>
+  </div>
+</div>
+<style>
+@keyframes loadBar{0%{width:0%;margin-left:0}50%{width:60%;margin-left:20%}100%{width:0%;margin-left:100%}}
+</style>
 <script>
-// ══════════════════════════════════════════
-// DATA STORE (localStorage-backed)
-// ══════════════════════════════════════════
-function loadUsers() {
-  try { return JSON.parse(localStorage.getItem('bhm_users') || '[]'); } catch { return []; }
-}
-function saveUsers(u) { localStorage.setItem('bhm_users', JSON.stringify(u)); }
-function loadDepts() {
-  try {
-    const d = localStorage.getItem('bhm_depts');
-    if (d) return JSON.parse(d);
-  } catch {}
-  return getDefaultDepts();
-}
-function saveDepts() { localStorage.setItem('bhm_depts', JSON.stringify(departments)); }
-function loadLog() {
-  try { return JSON.parse(localStorage.getItem('bhm_log') || '[]'); } catch { return []; }
-}
-function saveLog() { localStorage.setItem('bhm_log', JSON.stringify(activityLog)); }
+document.addEventListener('keydown', e => {
+  if (e.key==='Escape') document.querySelectorAll('.overlay.open').forEach(m=>m.classList.remove('open'));
+  if (e.key==='Enter' && !document.getElementById('loginScreen').classList.contains('hidden') && window.doLogin) window.doLogin();
+  if (e.key==='Enter' && !document.getElementById('registerScreen').classList.contains('hidden') && window.doRegister) window.doRegister();
+});
+</script>
 
+<script type="module">
+// ══════════════════════════════════════════
+// FIREBASE SETUP — Shared real-time database
+// ══════════════════════════════════════════
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getDatabase, ref, set, get, push, onValue, remove, update }
+  from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+// ⬇️ YOUR FIREBASE CONFIG — replace with yours from Firebase Console
+const firebaseConfig = {
+  apiKey: "AIzaSyCQQ_SdHfBjvQd8e1JU0cTX8lgsS_6NVDw",
+  authDomain: "biomedical-matara.firebaseapp.com",
+  databaseURL: "https://biomedical-matara-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "biomedical-matara",
+  storageBucket: "biomedical-matara.firebasestorage.app",
+  messagingSenderId: "63127231876",
+  appId: "1:63127231876:web:ff2da3b0a23f4d031691d1"
+};
+
+const app = initializeApp(firebaseConfig);
+const db  = getDatabase(app);
+
+// ── helpers ──
+const dbRef  = path => ref(db, path);
+const dbGet  = path => get(dbRef(path)).then(s => s.val());
+const dbSet  = (path, val) => set(dbRef(path), val);
+const dbPush = (path, val) => push(dbRef(path), val);
+const dbDel  = path => remove(dbRef(path));
+const dbOn   = (path, cb) => onValue(dbRef(path), snap => cb(snap.val()));
+
+// ══════════════════════════════════════════
+// DEFAULT DEPARTMENTS (first-run seed)
+// ══════════════════════════════════════════
 function getDefaultDepts() {
   return [
     { id:'etu', name:'ETU', full:'Emergency Treatment Unit', icon:'🚑', equipment:[
@@ -647,57 +677,90 @@ function getDefaultDepts() {
   ];
 }
 
-let departments = loadDepts();
-let activityLog = loadLog();
+// ══════════════════════════════════════════
+// GLOBAL STATE
+// ══════════════════════════════════════════
+let departments = [];
+let activityLog = [];
 let currentUser = null;
-let editTarget = null; // {deptId, equipId}
-let selSt = null;
-let pendingImg = null; // base64 for edit modal
-let pendingAddImg = null; // base64 for add modal
+let editTarget  = null;
+let selSt       = null;
+let pendingImg  = null;
+let pendingAddImg = null;
+
+// ── Firebase save helpers ──
+async function saveDepts() { await dbSet('departments', departments); }
+async function saveLog()   { await dbSet('log', activityLog.slice(0, 200)); } // keep last 200
+
+// ── Real-time listeners (called after login) ──
+function startListeners() {
+  dbOn('departments', val => {
+    if (val) {
+      departments = val;
+    } else {
+      // First run: seed default data
+      departments = getDefaultDepts();
+      saveDepts();
+    }
+    if (currentUser) { buildSidebar(); refreshAll(); }
+  });
+  dbOn('log', val => {
+    activityLog = val ? (Array.isArray(val) ? val : Object.values(val)) : [];
+    activityLog.sort((a,b) => new Date(b.time) - new Date(a.time));
+    const cur = ['dashboard','equipment','report','log'].find(p => !document.getElementById('page-'+p).classList.contains('hidden'));
+    if (cur === 'log') renderLog();
+  });
+}
 
 // ══════════════════════════════════════════
-// AUTH
+// AUTH (stored in Firebase /users)
 // ══════════════════════════════════════════
 function switchAuth(mode) {
   document.getElementById('loginScreen').classList.toggle('hidden', mode !== 'login');
   document.getElementById('registerScreen').classList.toggle('hidden', mode !== 'register');
 }
 
-function doRegister() {
+async function doRegister() {
   const first = document.getElementById('regFirst').value.trim();
   const last  = document.getElementById('regLast').value.trim();
   const user  = document.getElementById('regUser').value.trim().toLowerCase();
   const role  = document.getElementById('regRole').value;
   const pass  = document.getElementById('regPass').value;
   const pass2 = document.getElementById('regPass2').value;
-  const err = document.getElementById('regErr');
-  const suc = document.getElementById('regSuccess');
-  err.style.display='none'; suc.style.display='none';
+  document.getElementById('regErr').style.display='none';
+  document.getElementById('regSuccess').style.display='none';
 
   if (!first||!last||!user||!role||!pass||!pass2) { showErr('regErr','All fields are required.'); return; }
   if (pass.length < 4) { showErr('regErr','Password must be at least 4 characters.'); return; }
   if (pass !== pass2) { showErr('regErr','Passwords do not match.'); return; }
   if (!/^[a-z0-9_]+$/.test(user)) { showErr('regErr','Username: only letters, numbers, underscore.'); return; }
 
-  const users = loadUsers();
-  if (users.find(u => u.username === user)) { showErr('regErr','Username already taken.'); return; }
-  users.push({ username:user, password:pass, role, firstName:first, lastName:last, createdAt:new Date().toISOString() });
-  saveUsers(users);
-  suc.textContent = 'Account created! You can now sign in.';
-  suc.style.display = 'block';
-  setTimeout(() => { switchAuth('login'); }, 1800);
+  showLoadingBtn('regBtn', 'Creating account...');
+  const existing = await dbGet('users/' + user);
+  if (existing) { showErr('regErr','Username already taken.'); resetBtn('regBtn','Create Account →'); return; }
+
+  await dbSet('users/' + user, { username:user, password:pass, role, firstName:first, lastName:last, createdAt:new Date().toISOString() });
+  document.getElementById('regSuccess').textContent = 'Account created! You can now sign in.';
+  document.getElementById('regSuccess').style.display = 'block';
+  resetBtn('regBtn','Create Account →');
+  setTimeout(() => switchAuth('login'), 1800);
 }
 
-function doLogin() {
+async function doLogin() {
   const user = document.getElementById('liUser').value.trim().toLowerCase();
   const pass = document.getElementById('liPass').value;
-  const err = document.getElementById('loginErr');
-  err.style.display='none';
+  document.getElementById('loginErr').style.display='none';
   if (!user||!pass) { showErr('loginErr','Please enter username and password.'); return; }
-  const users = loadUsers();
-  const found = users.find(u => u.username === user && u.password === pass);
-  if (!found) { showErr('loginErr','Incorrect username or password.'); return; }
+
+  showLoadingBtn('loginBtn', 'Signing in...');
+  const found = await dbGet('users/' + user);
+  if (!found || found.password !== pass) {
+    showErr('loginErr','Incorrect username or password.');
+    resetBtn('loginBtn','Sign In →');
+    return;
+  }
   currentUser = found;
+  resetBtn('loginBtn','Sign In →');
   launchApp();
 }
 
@@ -715,6 +778,14 @@ function showErr(id, msg) {
   el.textContent = msg;
   el.style.display = 'block';
 }
+function showLoadingBtn(id, txt) {
+  const b = document.getElementById(id);
+  if (b) { b.textContent = txt; b.disabled = true; b.style.opacity='.7'; }
+}
+function resetBtn(id, txt) {
+  const b = document.getElementById(id);
+  if (b) { b.textContent = txt; b.disabled = false; b.style.opacity=''; }
+}
 
 // ══════════════════════════════════════════
 // APP INIT
@@ -726,12 +797,11 @@ function launchApp() {
   document.getElementById('loginScreen').classList.add('hidden');
   document.getElementById('registerScreen').classList.add('hidden');
   document.getElementById('app').style.display = 'block';
-  // Topbar
   document.getElementById('topAvatar').textContent = (currentUser.firstName[0]||'?').toUpperCase();
   document.getElementById('topName').textContent = currentUser.firstName + ' ' + currentUser.lastName;
   document.getElementById('topBadge').textContent = ROLE_LABEL[currentUser.role] || currentUser.role;
   document.getElementById('topBadge').className = 'user-role-badge ' + (ROLE_CLASS[currentUser.role]||'role-hr');
-  buildSidebar();
+  startListeners(); // start real-time Firebase listeners
   showPage('dashboard');
 }
 
@@ -973,7 +1043,7 @@ function selStatus(s) {
   });
 }
 
-function saveStatus() {
+async function saveStatus() {
   if (!editTarget) return;
   const dept = departments.find(d=>d.id===editTarget.deptId);
   const equip = dept.equipment.find(e=>e.id===editTarget.equipId);
@@ -982,15 +1052,14 @@ function saveStatus() {
   equip.notes = document.getElementById('mNotes').value;
   equip.updated = new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
   if (pendingImg !== null) equip.img = pendingImg;
-  saveDepts();
+  await saveDepts();
   activityLog.unshift({
     dept:dept.name, equip:equip.name, id:equip.id,
     from:old, to:equip.status, notes:equip.notes,
     user:currentUser.firstName+' '+currentUser.lastName, time:new Date().toLocaleString()
   });
-  saveLog();
+  await saveLog();
   closeModal('updateModal');
-  refreshAll();
   const t = equip.status==='Good'?'good':equip.status==='Service'?'warn':'err';
   showToast(`${equip.name} → ${equip.status}`, t);
 }
@@ -1008,7 +1077,7 @@ function openAddModal(deptId) {
   document.getElementById('addModal').classList.add('open');
 }
 
-function saveNewEquip() {
+async function saveNewEquip() {
   const deptId = document.getElementById('addDept').value;
   const nm = document.getElementById('addNm').value.trim();
   const ico = document.getElementById('addIco').value.trim()||'🔬';
@@ -1018,15 +1087,14 @@ function saveNewEquip() {
   const prefix = deptId.slice(0,3).toUpperCase();
   const newId = prefix+'-'+String(dept.equipment.length+1).padStart(3,'0');
   dept.equipment.push({id:newId, name:nm, icon:ico, status:st, notes:'', updated:new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}), img:pendingAddImg||''});
-  saveDepts();
+  await saveDepts();
   activityLog.unshift({
     dept:dept.name, equip:nm, id:newId,
     from:'—', to:st, notes:'New equipment added',
     user:currentUser.firstName+' '+currentUser.lastName, time:new Date().toLocaleString()
   });
-  saveLog();
+  await saveLog();
   closeModal('addModal');
-  refreshAll();
   showToast(`${nm} added to ${dept.name}!`,'good');
 }
 
@@ -1043,27 +1111,23 @@ function confirmDeleteEquip(deptId, equipId, equipName) {
   document.getElementById('confirmTitle').textContent = 'Remove Equipment?';
   document.getElementById('confirmMsg').textContent = `"${equipName}" will be permanently removed from this department.`;
   document.getElementById('confirmOkBtn').textContent = 'Yes, Remove';
-  document.getElementById('confirmOkBtn').onclick = () => {
+  document.getElementById('confirmOkBtn').onclick = async () => {
     const dept = departments.find(d=>d.id===deptId);
     const equip = dept.equipment.find(e=>e.id===equipId);
     dept.equipment = dept.equipment.filter(e=>e.id!==equipId);
-    saveDepts();
+    await saveDepts();
     activityLog.unshift({
       dept:dept.name, equip:equip.name, id:equip.id,
       from:equip.status, to:'Removed', notes:'Equipment removed',
       user:currentUser.firstName+' '+currentUser.lastName, time:new Date().toLocaleString()
     });
-    saveLog();
+    await saveLog();
     closeModal('confirmModal');
-    refreshAll();
     showToast(`${equip.name} removed`, 'err');
   };
   document.getElementById('confirmModal').classList.add('open');
 }
 
-// ══════════════════════════════════════════
-// DELETE DEPARTMENT
-// ══════════════════════════════════════════
 function confirmDeleteDept(deptId, deptName) {
   const dept = departments.find(d=>d.id===deptId);
   const count = dept ? dept.equipment.length : 0;
@@ -1071,18 +1135,16 @@ function confirmDeleteDept(deptId, deptName) {
   document.getElementById('confirmTitle').textContent = 'Remove Department?';
   document.getElementById('confirmMsg').textContent = `"${deptName}" and all ${count} equipment record${count!==1?'s':''} inside it will be permanently deleted.`;
   document.getElementById('confirmOkBtn').textContent = 'Yes, Delete Department';
-  document.getElementById('confirmOkBtn').onclick = () => {
+  document.getElementById('confirmOkBtn').onclick = async () => {
     departments = departments.filter(d=>d.id!==deptId);
-    saveDepts();
+    await saveDepts();
     activityLog.unshift({
       dept:deptName, equip:'—', id:'—',
       from:'Active', to:'Removed', notes:'Department deleted',
       user:currentUser.firstName+' '+currentUser.lastName, time:new Date().toLocaleString()
     });
-    saveLog();
+    await saveLog();
     closeModal('confirmModal');
-    buildSidebar();
-    refreshAll();
     showToast(`${deptName} department removed`, 'err');
   };
   document.getElementById('confirmModal').classList.add('open');
@@ -1098,7 +1160,7 @@ function openAddDeptModal() {
   document.getElementById('addDeptModal').classList.add('open');
 }
 
-function saveNewDept() {
+async function saveNewDept() {
   const shortNm = document.getElementById('deptShortNm').value.trim().toUpperCase();
   const fullNm  = document.getElementById('deptFullNm').value.trim();
   const ico     = document.getElementById('deptIco').value.trim() || '🏥';
@@ -1106,16 +1168,14 @@ function saveNewDept() {
   const id = shortNm.toLowerCase().replace(/[^a-z0-9]/g,'') + '_' + Date.now();
   if (departments.find(d=>d.name===shortNm)) { showToast('A department with this name already exists.', 'warn'); return; }
   departments.push({ id, name:shortNm, full:fullNm, icon:ico, equipment:[] });
-  saveDepts();
+  await saveDepts();
   activityLog.unshift({
     dept:shortNm, equip:'—', id:'—',
     from:'—', to:'Created', notes:'New department added',
     user:currentUser.firstName+' '+currentUser.lastName, time:new Date().toLocaleString()
   });
-  saveLog();
+  await saveLog();
   closeModal('addDeptModal');
-  buildSidebar();
-  refreshAll();
   showToast(`${shortNm} department added!`, 'good');
 }
 
@@ -1139,14 +1199,31 @@ function showToast(msg, type) {
   setTimeout(() => el.classList.remove('show'), 3200);
 }
 
-// Keyboard: close modal on Escape
-document.addEventListener('keydown', e => {
-  if (e.key==='Escape') {
-    document.querySelectorAll('.overlay.open').forEach(m => m.classList.remove('open'));
-  }
-  if (e.key==='Enter' && !document.getElementById('loginScreen').classList.contains('hidden')) doLogin();
-  if (e.key==='Enter' && !document.getElementById('registerScreen').classList.contains('hidden')) doRegister();
-});
+// ── Expose all functions to global scope (needed for onclick in HTML with ES modules) ──
+window.switchAuth = switchAuth;
+window.doLogin = doLogin;
+window.doRegister = doRegister;
+window.doLogout = doLogout;
+window.showPage = showPage;
+window.goDept = goDept;
+window.openEditModal = openEditModal;
+window.openImgOnly = openImgOnly;
+window.selStatus = selStatus;
+window.saveStatus = saveStatus;
+window.closeModal = closeModal;
+window.openAddModal = openAddModal;
+window.saveNewEquip = saveNewEquip;
+window.triggerImgUpload = triggerImgUpload;
+window.handleImgUpload = handleImgUpload;
+window.confirmDeleteEquip = confirmDeleteEquip;
+window.confirmDeleteDept = confirmDeleteDept;
+window.openAddDeptModal = openAddDeptModal;
+window.saveNewDept = saveNewDept;
+window.renderReport = renderReport;
+
+// ── Hide loading overlay once Firebase is initialized ──
+document.getElementById('loadingOverlay').style.display = 'none';
+document.getElementById('loginScreen').classList.remove('hidden');
 </script>
 </body>
 </html>
