@@ -292,7 +292,7 @@ select.form-input option{background:var(--panel)}
         </div>
       </div>
       <div class="auth-title">Create Account</div>
-      <div class="auth-subtitle">Register your staff account</div>
+      <div class="auth-subtitle">Register — Admin will assign your access role</div>
       <div class="auth-tabs" style="margin-top:18px">
         <div class="auth-tab" onclick="switchAuth('login')">Sign In</div>
         <div class="auth-tab active" onclick="switchAuth('register')">Register</div>
@@ -316,21 +316,15 @@ select.form-input option{background:var(--panel)}
         <input class="form-input" id="regUser" type="text" placeholder="Choose a username">
       </div>
       <div class="form-group">
-        <label class="form-label">Role</label>
-        <select class="form-input" id="regRole">
-          <option value="">Select your role...</option>
-          <option value="admin">Office Incharge (Admin)</option>
-          <option value="technician">Biomedical Technician</option>
-          <option value="hr">HR Manager</option>
-        </select>
-      </div>
-      <div class="form-group">
         <label class="form-label">Password</label>
         <input class="form-input" id="regPass" type="password" placeholder="Create password (min 4 chars)">
       </div>
       <div class="form-group">
         <label class="form-label">Confirm Password</label>
         <input class="form-input" id="regPass2" type="password" placeholder="Repeat password">
+      </div>
+      <div style="background:rgba(59,158,255,.08);border:1px solid rgba(59,158,255,.18);border-radius:9px;padding:11px 14px;font-size:12.5px;color:var(--text2);margin-bottom:16px;line-height:1.6">
+        ℹ️ Your account will be created with <b style="color:var(--text)">Viewer</b> access. The admin (<b style="color:var(--accent)">himaw_coop</b>) will assign your full role after registration.
       </div>
       <button class="btn-auth" id="regBtn" onclick="doRegister()">Create Account →</button>
     </div>
@@ -358,6 +352,7 @@ select.form-input option{background:var(--panel)}
     <div class="nav-item" onclick="showPage('equipment')"><span class="nav-icon">🔬</span> Departments <span class="nav-count" id="deptCnt">-</span></div>
     <div class="nav-item" onclick="showPage('report')"><span class="nav-icon">📋</span> Report</div>
     <div class="nav-item" onclick="showPage('log')"><span class="nav-icon">📝</span> Activity Log</div>
+    <div class="nav-item" id="manageUsersNav" style="display:none" onclick="showPage('users')"><span class="nav-icon">👥</span> Manage Users</div>
     <div class="nav-section" style="margin-top:10px">Departments</div>
     <div id="sidebarDepts"></div>
   </div>
@@ -412,6 +407,20 @@ select.form-input option{background:var(--panel)}
       <div id="page-log" class="hidden">
         <div class="page-hdr"><div class="page-title">Activity Log</div><div class="page-sub">All status updates and changes</div></div>
         <div class="log-list" id="logList"></div>
+      </div>
+
+      <!-- Manage Users (Admin only) -->
+      <div id="page-users" class="hidden">
+        <div class="page-hdr">
+          <div class="page-title">Manage Users</div>
+          <div class="page-sub">Assign roles to registered staff members</div>
+        </div>
+        <div class="table-wrap">
+          <table class="report-table">
+            <thead><tr><th>Name</th><th>Username</th><th>Current Role</th><th>Registered</th><th>Change Role</th></tr></thead>
+            <tbody id="usersBody"></tbody>
+          </table>
+        </div>
       </div>
     </div>
   </div>
@@ -689,14 +698,42 @@ let pendingImg  = null;
 let pendingAddImg = null;
 
 // ── Firebase save helpers ──
-async function saveDepts() { await dbSet('departments', departments); }
-async function saveLog()   { await dbSet('log', activityLog.slice(0, 200)); } // keep last 200
+async function saveDepts() {
+  // Convert array to object keyed by id for Firebase
+  const obj = {};
+  departments.forEach(d => {
+    const dCopy = {...d};
+    // equipment array → object
+    if (Array.isArray(d.equipment)) {
+      const eq = {};
+      d.equipment.forEach(e => { eq[e.id] = e; });
+      dCopy.equipment = eq;
+    }
+    obj[d.id] = dCopy;
+  });
+  await dbSet('departments', obj);
+}
+async function saveLog() { await dbSet('log', activityLog.slice(0, 200)); }
+
+// Convert Firebase snapshot to clean array
+function snapToDepts(val) {
+  if (!val) return [];
+  return Object.values(val).map(d => {
+    const dept = {...d};
+    if (d.equipment && !Array.isArray(d.equipment)) {
+      dept.equipment = Object.values(d.equipment);
+    } else if (!d.equipment) {
+      dept.equipment = [];
+    }
+    return dept;
+  });
+}
 
 // ── Real-time listeners (called after login) ──
 function startListeners() {
   dbOn('departments', val => {
     if (val) {
-      departments = val;
+      departments = snapToDepts(val);
     } else {
       // First run: seed default data
       departments = getDefaultDepts();
@@ -705,7 +742,9 @@ function startListeners() {
     if (currentUser) { buildSidebar(); refreshAll(); }
   });
   dbOn('log', val => {
-    activityLog = val ? (Array.isArray(val) ? val : Object.values(val)) : [];
+    if (!val) { activityLog = []; return; }
+    activityLog = Array.isArray(val) ? val : Object.values(val);
+    activityLog = activityLog.filter(Boolean);
     activityLog.sort((a,b) => new Date(b.time) - new Date(a.time));
     const cur = ['dashboard','equipment','report','log'].find(p => !document.getElementById('page-'+p).classList.contains('hidden'));
     if (cur === 'log') renderLog();
@@ -724,13 +763,12 @@ async function doRegister() {
   const first = document.getElementById('regFirst').value.trim();
   const last  = document.getElementById('regLast').value.trim();
   const user  = document.getElementById('regUser').value.trim().toLowerCase();
-  const role  = document.getElementById('regRole').value;
   const pass  = document.getElementById('regPass').value;
   const pass2 = document.getElementById('regPass2').value;
   document.getElementById('regErr').style.display='none';
   document.getElementById('regSuccess').style.display='none';
 
-  if (!first||!last||!user||!role||!pass||!pass2) { showErr('regErr','All fields are required.'); return; }
+  if (!first||!last||!user||!pass||!pass2) { showErr('regErr','All fields are required.'); return; }
   if (pass.length < 4) { showErr('regErr','Password must be at least 4 characters.'); return; }
   if (pass !== pass2) { showErr('regErr','Passwords do not match.'); return; }
   if (!/^[a-z0-9_]+$/.test(user)) { showErr('regErr','Username: only letters, numbers, underscore.'); return; }
@@ -739,11 +777,15 @@ async function doRegister() {
   const existing = await dbGet('users/' + user);
   if (existing) { showErr('regErr','Username already taken.'); resetBtn('regBtn','Create Account →'); return; }
 
-  await dbSet('users/' + user, { username:user, password:pass, role, firstName:first, lastName:last, createdAt:new Date().toISOString() });
-  document.getElementById('regSuccess').textContent = 'Account created! You can now sign in.';
+  // All new users get 'viewer' role — admin assigns real role later
+  await dbSet('users/' + user, {
+    username:user, password:pass, role:'viewer',
+    firstName:first, lastName:last, createdAt:new Date().toISOString()
+  });
+  document.getElementById('regSuccess').textContent = 'Account created! Sign in — admin will assign your role.';
   document.getElementById('regSuccess').style.display = 'block';
   resetBtn('regBtn','Create Account →');
-  setTimeout(() => switchAuth('login'), 1800);
+  setTimeout(() => switchAuth('login'), 2000);
 }
 
 async function doLogin() {
@@ -790,8 +832,24 @@ function resetBtn(id, txt) {
 // ══════════════════════════════════════════
 // APP INIT
 // ══════════════════════════════════════════
-const ROLE_LABEL = { admin:'Office Incharge', technician:'Technician', hr:'HR Manager' };
-const ROLE_CLASS = { admin:'role-admin', technician:'role-technician', hr:'role-hr' };
+const ADMIN_USER = 'himaw_coop';
+const ADMIN_PASS = '123456';
+
+async function seedAdminIfNeeded() {
+  const existing = await dbGet('users/' + ADMIN_USER);
+  if (!existing) {
+    await dbSet('users/' + ADMIN_USER, {
+      username: ADMIN_USER, password: ADMIN_PASS,
+      role: 'admin', firstName: 'Himaw', lastName: 'Coop',
+      createdAt: new Date().toISOString()
+    });
+  }
+}
+// Seed admin on page load
+seedAdminIfNeeded();
+
+const ROLE_LABEL = { admin:'Office Incharge', technician:'Technician', hr:'HR Manager', viewer:'Viewer (Pending)' };
+const ROLE_CLASS = { admin:'role-admin', technician:'role-technician', hr:'role-hr', viewer:'role-hr' };
 
 function launchApp() {
   document.getElementById('loginScreen').classList.add('hidden');
@@ -811,22 +869,26 @@ function buildSidebar() {
     `<div class="nav-item" onclick="goDept('${d.id}')">${d.icon} <span style="margin-left:4px">${d.name}</span></div>`
   ).join('');
   document.getElementById('deptCnt').textContent = departments.length;
+  // Show Manage Users only for admin
+  const muLink = document.getElementById('manageUsersNav');
+  if (muLink) muLink.style.display = currentUser && currentUser.role === 'admin' ? 'flex' : 'none';
 }
 
 // ══════════════════════════════════════════
 // PAGE ROUTING
 // ══════════════════════════════════════════
-const PAGES = ['dashboard','equipment','report','log'];
+const PAGES = ['dashboard','equipment','report','log','users'];
 function showPage(p) {
   PAGES.forEach(pp => document.getElementById('page-'+pp).classList.toggle('hidden', pp !== p));
   document.querySelectorAll('.sidebar .nav-item').forEach((el,i) => {
-    if (i < 4) el.classList.toggle('active', i === PAGES.indexOf(p));
+    if (i < 5) el.classList.toggle('active', i === PAGES.indexOf(p));
     else el.classList.remove('active');
   });
   if (p==='dashboard') renderDashboard();
   if (p==='equipment') renderEquipment();
   if (p==='report') renderReport();
   if (p==='log') renderLog();
+  if (p==='users') renderUsers();
 }
 
 function goDept(id) {
@@ -1199,7 +1261,43 @@ function showToast(msg, type) {
   setTimeout(() => el.classList.remove('show'), 3200);
 }
 
-// ── Expose all functions to global scope (needed for onclick in HTML with ES modules) ──
+// ══════════════════════════════════════════
+// MANAGE USERS (Admin only)
+// ══════════════════════════════════════════
+async function renderUsers() {
+  const body = document.getElementById('usersBody');
+  body.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:20px;color:var(--text2)">Loading...</td></tr>';
+  const users = await dbGet('users');
+  if (!users) { body.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:20px;color:var(--text2)">No users found.</td></tr>'; return; }
+  const list = Object.values(users);
+  const roleOpts = ['admin','technician','hr','viewer'].map(r =>
+    `<option value="${r}">${ROLE_LABEL[r]||r}</option>`).join('');
+  body.innerHTML = list.map(u => `
+    <tr>
+      <td style="font-weight:600;color:var(--white)">${u.firstName} ${u.lastName}</td>
+      <td style="font-family:var(--font-mono);font-size:12px;color:var(--text2)">@${u.username}</td>
+      <td><span class="status-pill ${u.role==='admin'?'pill-Good':u.role==='viewer'?'pill-Repair':'pill-Service'}">${ROLE_LABEL[u.role]||u.role}</span></td>
+      <td style="font-size:12px;color:var(--text2)">${u.createdAt ? new Date(u.createdAt).toLocaleDateString() : '—'}</td>
+      <td>
+        ${u.username === ADMIN_USER ? '<span style="font-size:12px;color:var(--text3)">Super Admin</span>' : `
+        <div style="display:flex;gap:8px;align-items:center">
+          <select class="filter-sel" id="role_${u.username}" style="padding:5px 10px;font-size:12px">
+            ${['admin','technician','hr','viewer'].map(r=>`<option value="${r}" ${u.role===r?'selected':''}>${ROLE_LABEL[r]||r}</option>`).join('')}
+          </select>
+          <button class="btn btn-primary" style="padding:5px 12px;font-size:12px" onclick="assignRole('${u.username}')">Save</button>
+        </div>`}
+      </td>
+    </tr>`).join('');
+}
+
+async function assignRole(username) {
+  const sel = document.getElementById('role_' + username);
+  if (!sel) return;
+  const newRole = sel.value;
+  await dbSet('users/' + username + '/role', newRole);
+  showToast(`Role updated for @${username} → ${ROLE_LABEL[newRole]||newRole}`, 'good');
+  renderUsers();
+}
 window.switchAuth = switchAuth;
 window.doLogin = doLogin;
 window.doRegister = doRegister;
@@ -1219,6 +1317,8 @@ window.confirmDeleteEquip = confirmDeleteEquip;
 window.confirmDeleteDept = confirmDeleteDept;
 window.openAddDeptModal = openAddDeptModal;
 window.saveNewDept = saveNewDept;
+window.renderUsers = renderUsers;
+window.assignRole = assignRole;
 window.renderReport = renderReport;
 
 // ── Hide loading overlay once Firebase is initialized ──
