@@ -214,7 +214,24 @@ select.form-input option{background:var(--panel)}
 .toast.t-err{border-color:rgba(255,77,106,.3);color:var(--red)}
 .toast.t-info{border-color:rgba(59,158,255,.3);color:var(--accent)}
 
-/* ─── DELETE / REMOVE BUTTONS ─── */
+/* ─── SPARE PARTS / STOCK TABLES ─── */
+.section-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.qty-badge{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:700}
+.qty-ok{background:rgba(34,217,138,.1);color:var(--green);border:1px solid rgba(34,217,138,.2)}
+.qty-low{background:rgba(245,166,35,.1);color:var(--yellow);border:1px solid rgba(245,166,35,.2)}
+.qty-out{background:rgba(255,77,106,.1);color:var(--red);border:1px solid rgba(255,77,106,.2)}
+.inline-edit{background:var(--bg2);border:1px solid var(--border);border-radius:6px;color:var(--white);padding:4px 8px;font-size:13px;font-family:var(--font-body);outline:none;width:70px;text-align:center}
+.inline-edit:focus{border-color:var(--accent)}
+.add-row-btn{display:flex;align-items:center;gap:7px;padding:10px 16px;background:rgba(59,158,255,.05);border:1px dashed rgba(59,158,255,.2);border-radius:8px;color:var(--accent);font-size:13px;cursor:pointer;transition:all .15s;width:100%}
+.add-row-btn:hover{background:rgba(59,158,255,.1);border-color:var(--accent)}
+/* profile dropdown */
+.profile-wrap{position:relative}
+.profile-dropdown{position:absolute;top:44px;right:0;background:var(--panel);border:1px solid var(--border2);border-radius:12px;width:240px;box-shadow:0 20px 60px rgba(0,0,0,.6);z-index:300;display:none;animation:mIn .15s ease}
+.profile-dropdown.open{display:block}
+.profile-dd-top{padding:16px;border-bottom:1px solid var(--border)}
+.profile-dd-item{padding:10px 16px;font-size:13px;color:var(--text2);cursor:pointer;display:flex;align-items:center;gap:9px;transition:background .15s}
+.profile-dd-item:hover{background:rgba(59,158,255,.06);color:var(--text)}
+.profile-dd-item.danger:hover{background:rgba(255,77,106,.06);color:var(--red)}
 .equip-del{width:26px;height:26px;border-radius:6px;background:rgba(255,77,106,.0);border:1px solid transparent;color:transparent;font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;flex-shrink:0}
 .equip-item:hover .equip-del{background:rgba(255,77,106,.1);border-color:rgba(255,77,106,.25);color:var(--red)}
 .equip-del:hover{background:rgba(255,77,106,.22)!important}
@@ -339,17 +356,33 @@ select.form-input option{background:var(--panel)}
       <div class="topbar-name">Cooperative Hospital <span>Matara</span></div>
     </div>
     <div class="topbar-user-info">
-      <div class="user-avatar" id="topAvatar">?</div>
-      <div class="user-name" id="topName">-</div>
-      <div class="user-role-badge" id="topBadge">-</div>
+      <div class="profile-wrap">
+        <div style="display:flex;align-items:center;gap:10px;cursor:pointer" onclick="toggleProfile()">
+          <div class="user-avatar" id="topAvatar">?</div>
+          <div class="user-name" id="topName">-</div>
+          <div class="user-role-badge" id="topBadge">-</div>
+          <span style="color:var(--text3);font-size:11px">▼</span>
+        </div>
+        <div class="profile-dropdown" id="profileDropdown">
+          <div class="profile-dd-top">
+            <div style="font-size:13px;font-weight:700;color:var(--white)" id="ddName">-</div>
+            <div style="font-size:11px;color:var(--text2);margin-top:2px" id="ddRole">-</div>
+          </div>
+          <div class="profile-dd-item" onclick="openEditProfile()">✏️ Edit Profile</div>
+          <div class="profile-dd-item danger" onclick="doLogout()">🚪 Sign Out</div>
+        </div>
+      </div>
     </div>
-    <button class="btn-logout" onclick="doLogout()">Sign Out</button>
+    <button class="btn-logout" onclick="doLogout()" style="display:none">Sign Out</button>
   </div>
 
   <div class="sidebar">
     <div class="nav-section">Main</div>
     <div class="nav-item active" onclick="showPage('dashboard')"><span class="nav-icon">📊</span> Dashboard</div>
     <div class="nav-item" onclick="showPage('equipment')"><span class="nav-icon">🔬</span> Departments <span class="nav-count" id="deptCnt">-</span></div>
+    <div class="nav-item" onclick="showPage('damaged')"><span class="nav-icon">💔</span> Damaged Machines</div>
+    <div class="nav-item" onclick="showPage('stock')"><span class="nav-icon">📦</span> New Machine Stock</div>
+    <div class="nav-item" onclick="showPage('spareparts')"><span class="nav-icon">🔩</span> Spare Parts</div>
     <div class="nav-item" onclick="showPage('report')"><span class="nav-icon">📋</span> Report</div>
     <div class="nav-item" onclick="showPage('log')"><span class="nav-icon">📝</span> Activity Log</div>
     <div class="nav-item" id="manageUsersNav" style="display:none" onclick="showPage('users')"><span class="nav-icon">👥</span> Manage Users</div>
@@ -399,6 +432,60 @@ select.form-input option{background:var(--panel)}
           <table class="report-table">
             <thead><tr><th></th><th>Department</th><th>Equipment</th><th>Asset ID</th><th>Status</th><th>Updated</th><th>Notes</th></tr></thead>
             <tbody id="reportBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Damaged Machines -->
+      <div id="page-damaged" class="hidden">
+        <div class="page-hdr">
+          <div class="page-title">💔 Damaged Machines</div>
+          <div class="page-sub">Machines written off or beyond repair</div>
+        </div>
+        <div class="section-hdr">
+          <span style="font-size:13px;color:var(--text2)" id="damagedCount">0 records</span>
+          ${`<button class="btn btn-primary" style="font-size:13px;padding:8px 16px" onclick="openAddDamagedModal()">＋ Add Damaged Machine</button>`}
+        </div>
+        <div class="table-wrap">
+          <table class="report-table">
+            <thead><tr><th>Asset ID</th><th>Machine Name</th><th>Department</th><th>Damage Details</th><th>Date Recorded</th><th>By</th><th></th></tr></thead>
+            <tbody id="damagedBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- New Machine Stock -->
+      <div id="page-stock" class="hidden">
+        <div class="page-hdr">
+          <div class="page-title">📦 New Machine Stock</div>
+          <div class="page-sub">Machines stored in Biomedical store — not yet deployed</div>
+        </div>
+        <div class="section-hdr">
+          <span style="font-size:13px;color:var(--text2)" id="stockCount">0 items</span>
+          <button class="btn btn-primary" style="font-size:13px;padding:8px 16px" onclick="openAddStockModal()">＋ Add to Stock</button>
+        </div>
+        <div class="table-wrap">
+          <table class="report-table">
+            <thead><tr><th>Asset ID</th><th>Machine Name</th><th>Qty</th><th>Condition</th><th>Location in Store</th><th>Added</th><th></th></tr></thead>
+            <tbody id="stockBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Spare Parts -->
+      <div id="page-spareparts" class="hidden">
+        <div class="page-hdr">
+          <div class="page-title">🔩 Spare Parts</div>
+          <div class="page-sub">Track probes, cables, and parts — quantity available vs needed</div>
+        </div>
+        <div class="section-hdr">
+          <span style="font-size:13px;color:var(--text2)" id="spareCount">0 parts</span>
+          <button class="btn btn-primary" style="font-size:13px;padding:8px 16px" onclick="openAddSpareModal()">＋ Add Spare Part</button>
+        </div>
+        <div class="table-wrap">
+          <table class="report-table">
+            <thead><tr><th>Part Name</th><th>Used For (Machine)</th><th>Qty Available</th><th>Qty Need to Buy</th><th>Status</th><th>Notes</th><th></th></tr></thead>
+            <tbody id="spareBody"></tbody>
           </table>
         </div>
       </div>
@@ -568,6 +655,221 @@ select.form-input option{background:var(--panel)}
       <button class="btn btn-ghost" onclick="closeModal('addDeptModal')">Cancel</button>
       <button class="btn btn-primary" onclick="saveNewDept()">Add Department</button>
     </div>
+  </div>
+</div>
+
+<!-- ═══ ADD DAMAGED MACHINE MODAL ═══ -->
+<div class="overlay" id="addDamagedModal">
+  <div class="modal">
+    <div class="modal-hdr"><div class="modal-title">💥 Report Damaged Machine</div><button class="close-btn" onclick="closeModal('addDamagedModal')">✕</button></div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Asset ID</label>
+          <input class="form-input" id="dmgId" type="text" placeholder="e.g. ETU-0001">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Department</label>
+          <select class="form-input" id="dmgDept"></select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Machine Name</label>
+        <input class="form-input" id="dmgName" type="text" placeholder="e.g. Patient Monitor">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Damage Description</label>
+        <textarea class="form-textarea" id="dmgDesc" placeholder="Describe what is damaged..."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('addDamagedModal')">Cancel</button>
+      <button class="btn btn-danger" onclick="saveDamagedMachine()">Report Damage</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ ADD STOCK MACHINE MODAL ═══ -->
+<div class="overlay" id="addStockModal">
+  <div class="modal">
+    <div class="modal-hdr"><div class="modal-title">📦 Add Machine to Stock</div><button class="close-btn" onclick="closeModal('addStockModal')">✕</button></div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Asset ID</label>
+          <input class="form-input" id="stkId" type="text" placeholder="e.g. STK-0001">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Quantity</label>
+          <input class="form-input" id="stkQty" type="number" min="1" value="1">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Machine Name</label>
+        <input class="form-input" id="stkName" type="text" placeholder="e.g. ECG Machine">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Model / Serial No.</label>
+          <input class="form-input" id="stkModel" type="text" placeholder="Model or serial">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Received Date</label>
+          <input class="form-input" id="stkDate" type="date">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Notes</label>
+        <textarea class="form-textarea" id="stkNotes" placeholder="Any notes..."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('addStockModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveStockItem()">Add to Stock</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ ADD SPARE PART MODAL ═══ -->
+<div class="overlay" id="addPartModal">
+  <div class="modal">
+    <div class="modal-hdr"><div class="modal-title">🔩 Add Spare Part</div><button class="close-btn" onclick="closeModal('addPartModal')">✕</button></div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Part Name</label>
+        <input class="form-input" id="partName" type="text" placeholder="e.g. ECG Probe, SpO2 Cable">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Used For (Machine)</label>
+        <input class="form-input" id="partMachine" type="text" placeholder="e.g. Patient Monitor, ECG Machine">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Quantity In Stock</label>
+          <input class="form-input" id="partQty" type="number" min="0" value="0">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Minimum Required</label>
+          <input class="form-input" id="partMin" type="number" min="0" value="1">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Notes</label>
+        <textarea class="form-textarea" id="partNotes" placeholder="Supplier, part number, etc..."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('addPartModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveSparePart()">Add Part</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ EDIT SPARE PART QTY MODAL ═══ -->
+<div class="overlay" id="editPartModal">
+  <div class="modal" style="width:380px">
+    <div class="modal-hdr"><div class="modal-title">Update Stock</div><button class="close-btn" onclick="closeModal('editPartModal')">✕</button></div>
+    <div class="modal-body">
+      <div style="font-size:15px;font-weight:600;color:var(--white);margin-bottom:16px" id="editPartName">-</div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Quantity In Stock</label>
+          <input class="form-input" id="editPartQty" type="number" min="0">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Minimum Required</label>
+          <input class="form-input" id="editPartMin" type="number" min="0">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Notes</label>
+        <textarea class="form-textarea" id="editPartNotes"></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('editPartModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveEditPart()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ ADD DAMAGED MACHINE MODAL ═══ -->
+<div class="overlay" id="addDamagedModal">
+  <div class="modal">
+    <div class="modal-hdr"><div class="modal-title">💔 Record Damaged Machine</div><button class="close-btn" onclick="closeModal('addDamagedModal')">✕</button></div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Asset ID</label><input class="form-input" id="dmgId" placeholder="e.g. ETU-0001"></div>
+        <div class="form-group"><label class="form-label">Department</label><input class="form-input" id="dmgDept" placeholder="e.g. ETU"></div>
+      </div>
+      <div class="form-group"><label class="form-label">Machine Name</label><input class="form-input" id="dmgName" placeholder="e.g. Patient Monitor"></div>
+      <div class="form-group"><label class="form-label">Damage Details / Reason</label><textarea class="form-textarea" id="dmgDetails" placeholder="Describe the damage..."></textarea></div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('addDamagedModal')">Cancel</button><button class="btn btn-primary" onclick="saveNewDamaged()">Save Record</button></div>
+  </div>
+</div>
+
+<!-- ═══ ADD STOCK MODAL ═══ -->
+<div class="overlay" id="addStockModal">
+  <div class="modal">
+    <div class="modal-hdr"><div class="modal-title">📦 Add to New Machine Stock</div><button class="close-btn" onclick="closeModal('addStockModal')">✕</button></div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Asset ID</label><input class="form-input" id="stkId" placeholder="e.g. BM-0001"></div>
+        <div class="form-group"><label class="form-label">Quantity</label><input class="form-input" id="stkQty" type="number" value="1" min="1"></div>
+      </div>
+      <div class="form-group"><label class="form-label">Machine Name</label><input class="form-input" id="stkName" placeholder="e.g. ECG Machine"></div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Condition</label>
+          <select class="form-input" id="stkCond">
+            <option value="New">Brand New</option>
+            <option value="Good">Good</option>
+            <option value="Refurbished">Refurbished</option>
+          </select>
+        </div>
+        <div class="form-group"><label class="form-label">Store Location</label><input class="form-input" id="stkLoc" placeholder="e.g. Shelf A3"></div>
+      </div>
+      <div class="form-group"><label class="form-label">Notes</label><textarea class="form-textarea" id="stkNotes" placeholder="Any additional info..."></textarea></div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('addStockModal')">Cancel</button><button class="btn btn-primary" onclick="saveNewStock()">Add to Stock</button></div>
+  </div>
+</div>
+
+<!-- ═══ ADD SPARE PART MODAL ═══ -->
+<div class="overlay" id="addSpareModal">
+  <div class="modal">
+    <div class="modal-hdr"><div class="modal-title">🔩 Add Spare Part</div><button class="close-btn" onclick="closeModal('addSpareModal')">✕</button></div>
+    <div class="modal-body">
+      <div class="form-group"><label class="form-label">Part Name</label><input class="form-input" id="spName" placeholder="e.g. SpO2 Probe, ECG Cable, Blood Pressure Cuff"></div>
+      <div class="form-group"><label class="form-label">Used For (Machine / Department)</label><input class="form-input" id="spMachine" placeholder="e.g. Patient Monitor — ETU"></div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Qty Available</label><input class="form-input" id="spHave" type="number" value="0" min="0"></div>
+        <div class="form-group"><label class="form-label">Qty Need to Buy</label><input class="form-input" id="spNeed" type="number" value="0" min="0"></div>
+      </div>
+      <div class="form-group"><label class="form-label">Notes</label><textarea class="form-textarea" id="spNotes" placeholder="Supplier info, model number, etc..."></textarea></div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('addSpareModal')">Cancel</button><button class="btn btn-primary" onclick="saveNewSpare()">Add Part</button></div>
+  </div>
+</div>
+
+<!-- ═══ EDIT PROFILE MODAL ═══ -->
+<div class="overlay" id="editProfileModal">
+  <div class="modal">
+    <div class="modal-hdr"><div class="modal-title">✏️ Edit Profile</div><button class="close-btn" onclick="closeModal('editProfileModal')">✕</button></div>
+    <div class="modal-body">
+      <div class="auth-err" id="profileErr" style="margin-bottom:14px"></div>
+      <div class="auth-success" id="profileSuccess" style="margin-bottom:14px"></div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">First Name</label><input class="form-input" id="epFirst" type="text"></div>
+        <div class="form-group"><label class="form-label">Last Name</label><input class="form-input" id="epLast" type="text"></div>
+      </div>
+      <div style="border-top:1px solid var(--border);padding-top:16px;margin-top:4px;margin-bottom:16px">
+        <div style="font-size:12px;font-weight:700;color:var(--text2);letter-spacing:1px;text-transform:uppercase;margin-bottom:14px">Change Password (optional)</div>
+        <div class="form-group"><label class="form-label">New Password</label><input class="form-input" id="epPass" type="password" placeholder="Leave blank to keep current"></div>
+        <div class="form-group"><label class="form-label">Confirm New Password</label><input class="form-input" id="epPass2" type="password" placeholder="Repeat new password"></div>
+      </div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('editProfileModal')">Cancel</button><button class="btn btn-primary" onclick="saveProfile()">Save Changes</button></div>
   </div>
 </div>
 
@@ -859,6 +1161,8 @@ function launchApp() {
   document.getElementById('topName').textContent = currentUser.firstName + ' ' + currentUser.lastName;
   document.getElementById('topBadge').textContent = ROLE_LABEL[currentUser.role] || currentUser.role;
   document.getElementById('topBadge').className = 'user-role-badge ' + (ROLE_CLASS[currentUser.role]||'role-hr');
+  document.getElementById('ddName').textContent = currentUser.firstName + ' ' + currentUser.lastName;
+  document.getElementById('ddRole').textContent = ROLE_LABEL[currentUser.role] || currentUser.role;
   startListeners(); // start real-time Firebase listeners
   showPage('dashboard');
 }
@@ -877,18 +1181,22 @@ function buildSidebar() {
 // ══════════════════════════════════════════
 // PAGE ROUTING
 // ══════════════════════════════════════════
-const PAGES = ['dashboard','equipment','report','log','users'];
+const PAGES = ['dashboard','equipment','damaged','stock','spareparts','report','log','users','profile'];
 function showPage(p) {
   PAGES.forEach(pp => document.getElementById('page-'+pp).classList.toggle('hidden', pp !== p));
-  document.querySelectorAll('.sidebar .nav-item').forEach((el,i) => {
-    if (i < 5) el.classList.toggle('active', i === PAGES.indexOf(p));
-    else el.classList.remove('active');
-  });
+  document.querySelectorAll('.sidebar .nav-item').forEach(el => el.classList.remove('active'));
+  const idx = ['dashboard','equipment','damaged','stock','spareparts','report','log'].indexOf(p);
+  const navItems = document.querySelectorAll('.sidebar .nav-item');
+  if (idx >= 0 && navItems[idx]) navItems[idx].classList.add('active');
   if (p==='dashboard') renderDashboard();
   if (p==='equipment') renderEquipment();
   if (p==='report') renderReport();
   if (p==='log') renderLog();
   if (p==='users') renderUsers();
+  if (p==='damaged') renderDamaged();
+  if (p==='stock') renderStock();
+  if (p==='spareparts') renderSpareParts();
+  if (p==='profile') openProfile();
 }
 
 function goDept(id) {
@@ -1146,8 +1454,14 @@ async function saveNewEquip() {
   const st = document.getElementById('addSt').value;
   if (!nm) { showToast('Enter equipment name!','warn'); return; }
   const dept = departments.find(d=>d.id===deptId);
-  const prefix = deptId.slice(0,3).toUpperCase();
-  const newId = prefix+'-'+String(dept.equipment.length+1).padStart(3,'0');
+  const prefix = dept.name.replace(/[^A-Z0-9]/gi,'').slice(0,3).toUpperCase();
+  // Find max existing number for this dept prefix
+  const existing = dept.equipment.map(e => {
+    const m = e.id.match(/-(\d+)$/);
+    return m ? parseInt(m[1]) : 0;
+  });
+  const nextNum = (existing.length ? Math.max(...existing) : 0) + 1;
+  const newId = prefix + '-' + String(nextNum).padStart(4,'0');
   dept.equipment.push({id:newId, name:nm, icon:ico, status:st, notes:'', updated:new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}), img:pendingAddImg||''});
   await saveDepts();
   activityLog.unshift({
@@ -1157,7 +1471,7 @@ async function saveNewEquip() {
   });
   await saveLog();
   closeModal('addModal');
-  showToast(`${nm} added to ${dept.name}!`,'good');
+  showToast(`${nm} added — ID: ${newId}`, 'good');
 }
 
 function closeModal(id) {
@@ -1262,6 +1576,196 @@ function showToast(msg, type) {
 }
 
 // ══════════════════════════════════════════
+// DAMAGED MACHINES
+// ══════════════════════════════════════════
+async function renderDamaged() {
+  const data = await dbGet('damaged') || {};
+  const list = Object.entries(data);
+  document.getElementById('damagedCount').textContent = list.length + ' records';
+  const canEdit = canEditRole();
+  document.getElementById('damagedBody').innerHTML = list.length === 0
+    ? `<tr><td colspan="7" style="text-align:center;padding:30px;color:var(--text2)">No damaged machines recorded.</td></tr>`
+    : list.map(([key, r]) => `<tr>
+        <td style="font-family:var(--font-mono);font-size:12px;color:var(--accent)">${r.assetId||'—'}</td>
+        <td style="font-weight:600;color:var(--white)">${r.name}</td>
+        <td style="color:var(--text2)">${r.dept||'—'}</td>
+        <td style="font-size:13px;color:var(--text2);max-width:200px">${r.details||'—'}</td>
+        <td style="font-size:12px;color:var(--text3)">${r.date||'—'}</td>
+        <td style="font-size:12px;color:var(--text3)">${r.by||'—'}</td>
+        <td>${canEdit?`<button class="equip-del" style="display:flex;color:var(--red);border-color:rgba(255,77,106,.3);background:rgba(255,77,106,.08)" onclick="deleteRecord('damaged','${key}','renderDamaged')">✕</button>`:''}
+        </td></tr>`).join('');
+}
+function openAddDamagedModal() {
+  document.getElementById('dmgId').value=''; document.getElementById('dmgDept').value='';
+  document.getElementById('dmgName').value=''; document.getElementById('dmgDetails').value='';
+  document.getElementById('addDamagedModal').classList.add('open');
+}
+async function saveNewDamaged() {
+  const assetId = document.getElementById('dmgId').value.trim();
+  const name = document.getElementById('dmgName').value.trim();
+  const dept = document.getElementById('dmgDept').value.trim();
+  const details = document.getElementById('dmgDetails').value.trim();
+  if (!name) { showToast('Enter machine name!','warn'); return; }
+  await dbPush('damaged', { assetId, name, dept, details, date:new Date().toLocaleDateString(), by:currentUser.firstName+' '+currentUser.lastName });
+  closeModal('addDamagedModal');
+  renderDamaged();
+  showToast(`${name} recorded as damaged`, 'err');
+}
+
+// ══════════════════════════════════════════
+// NEW MACHINE STOCK
+// ══════════════════════════════════════════
+async function renderStock() {
+  const data = await dbGet('stock') || {};
+  const list = Object.entries(data);
+  document.getElementById('stockCount').textContent = list.length + ' items';
+  const canEdit = canEditRole();
+  document.getElementById('stockBody').innerHTML = list.length === 0
+    ? `<tr><td colspan="7" style="text-align:center;padding:30px;color:var(--text2)">No stock recorded.</td></tr>`
+    : list.map(([key, r]) => `<tr>
+        <td style="font-family:var(--font-mono);font-size:12px;color:var(--accent)">${r.assetId||'—'}</td>
+        <td style="font-weight:600;color:var(--white)">${r.name}</td>
+        <td><span class="qty-badge qty-ok">${r.qty||1}</span></td>
+        <td><span class="status-pill ${r.cond==='New'?'pill-Good':r.cond==='Refurbished'?'pill-Service':'pill-Good'}">${r.cond||'New'}</span></td>
+        <td style="color:var(--text2)">${r.location||'—'}</td>
+        <td style="font-size:12px;color:var(--text3)">${r.date||'—'}</td>
+        <td>${canEdit?`<button class="equip-del" style="display:flex;color:var(--red);border-color:rgba(255,77,106,.3);background:rgba(255,77,106,.08)" onclick="deleteRecord('stock','${key}','renderStock')">✕</button>`:''}
+        </td></tr>`).join('');
+}
+function openAddStockModal() {
+  ['stkId','stkName','stkNotes','stkLoc'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('stkQty').value='1';
+  document.getElementById('stkCond').value='New';
+  document.getElementById('addStockModal').classList.add('open');
+}
+async function saveNewStock() {
+  const name = document.getElementById('stkName').value.trim();
+  if (!name) { showToast('Enter machine name!','warn'); return; }
+  await dbPush('stock', {
+    assetId: document.getElementById('stkId').value.trim(),
+    name, qty: document.getElementById('stkQty').value,
+    cond: document.getElementById('stkCond').value,
+    location: document.getElementById('stkLoc').value.trim(),
+    notes: document.getElementById('stkNotes').value.trim(),
+    date: new Date().toLocaleDateString(),
+    by: currentUser.firstName+' '+currentUser.lastName
+  });
+  closeModal('addStockModal');
+  renderStock();
+  showToast(`${name} added to stock!`, 'good');
+}
+
+// ══════════════════════════════════════════
+// SPARE PARTS
+// ══════════════════════════════════════════
+async function renderSpares() {
+  const data = await dbGet('spareparts') || {};
+  const list = Object.entries(data);
+  document.getElementById('spareCount').textContent = list.length + ' parts';
+  const canEdit = canEditRole();
+  document.getElementById('spareBody').innerHTML = list.length === 0
+    ? `<tr><td colspan="7" style="text-align:center;padding:30px;color:var(--text2)">No spare parts recorded.</td></tr>`
+    : list.map(([key, r]) => {
+        const have = parseInt(r.have)||0;
+        const need = parseInt(r.need)||0;
+        const statusClass = have === 0 ? 'qty-out' : have < need ? 'qty-low' : 'qty-ok';
+        const statusLabel = have === 0 ? '🔴 Out of Stock' : have < need ? '🟡 Low Stock' : '🟢 Sufficient';
+        return `<tr>
+          <td style="font-weight:600;color:var(--white)">${r.name}</td>
+          <td style="color:var(--text2);font-size:13px">${r.machine||'—'}</td>
+          <td><input class="inline-edit" type="number" value="${have}" min="0" onchange="updateSpareQty('${key}','have',this.value)"></td>
+          <td><input class="inline-edit" type="number" value="${need}" min="0" onchange="updateSpareQty('${key}','need',this.value)"></td>
+          <td><span class="qty-badge ${statusClass}">${statusLabel}</span></td>
+          <td style="font-size:12px;color:var(--text3);max-width:160px">${r.notes||'—'}</td>
+          <td>${canEdit?`<button class="equip-del" style="display:flex;color:var(--red);border-color:rgba(255,77,106,.3);background:rgba(255,77,106,.08)" onclick="deleteRecord('spareparts','${key}','renderSpares')">✕</button>`:''}
+          </td></tr>`;
+      }).join('');
+}
+function openAddSpareModal() {
+  ['spName','spMachine','spNotes'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('spHave').value='0';
+  document.getElementById('spNeed').value='0';
+  document.getElementById('addSpareModal').classList.add('open');
+}
+async function saveNewSpare() {
+  const name = document.getElementById('spName').value.trim();
+  if (!name) { showToast('Enter part name!','warn'); return; }
+  await dbPush('spareparts', {
+    name, machine: document.getElementById('spMachine').value.trim(),
+    have: document.getElementById('spHave').value,
+    need: document.getElementById('spNeed').value,
+    notes: document.getElementById('spNotes').value.trim()
+  });
+  closeModal('addSpareModal');
+  renderSpares();
+  showToast(`${name} added to spare parts!`, 'good');
+}
+async function updateSpareQty(key, field, val) {
+  await dbSet(`spareparts/${key}/${field}`, parseInt(val)||0);
+  // re-render status column only — avoid full reload
+  renderSpares();
+}
+
+// ══════════════════════════════════════════
+// GENERIC DELETE RECORD
+// ══════════════════════════════════════════
+async function deleteRecord(collection, key, renderFn) {
+  await dbDel(`${collection}/${key}`);
+  window[renderFn]();
+  showToast('Record deleted', 'err');
+}
+
+// ══════════════════════════════════════════
+// EDIT PROFILE
+// ══════════════════════════════════════════
+function toggleProfile() {
+  document.getElementById('profileDropdown').classList.toggle('open');
+}
+function openEditProfile() {
+  document.getElementById('profileDropdown').classList.remove('open');
+  document.getElementById('epFirst').value = currentUser.firstName || '';
+  document.getElementById('epLast').value = currentUser.lastName || '';
+  document.getElementById('epPass').value = '';
+  document.getElementById('epPass2').value = '';
+  document.getElementById('profileErr').style.display = 'none';
+  document.getElementById('profileSuccess').style.display = 'none';
+  document.getElementById('editProfileModal').classList.add('open');
+}
+async function saveProfile() {
+  const first = document.getElementById('epFirst').value.trim();
+  const last  = document.getElementById('epLast').value.trim();
+  const pass  = document.getElementById('epPass').value;
+  const pass2 = document.getElementById('epPass2').value;
+  document.getElementById('profileErr').style.display='none';
+  if (!first||!last) { showProfileErr('Name fields cannot be empty.'); return; }
+  if (pass && pass.length < 4) { showProfileErr('Password must be at least 4 characters.'); return; }
+  if (pass && pass !== pass2) { showProfileErr('Passwords do not match.'); return; }
+  const updates = { firstName:first, lastName:last };
+  if (pass) updates.password = pass;
+  await dbSet('users/'+currentUser.username, {...currentUser, ...updates});
+  currentUser = {...currentUser, ...updates};
+  document.getElementById('topName').textContent = first + ' ' + last;
+  document.getElementById('topAvatar').textContent = first[0].toUpperCase();
+  document.getElementById('ddName').textContent = first + ' ' + last;
+  document.getElementById('profileSuccess').textContent = 'Profile updated successfully!';
+  document.getElementById('profileSuccess').style.display = 'block';
+  setTimeout(() => closeModal('editProfileModal'), 1500);
+  showToast('Profile updated!', 'good');
+}
+function showProfileErr(msg) {
+  const el = document.getElementById('profileErr');
+  el.textContent = msg; el.style.display = 'block';
+}
+
+// Close profile dropdown when clicking outside
+document.addEventListener('click', e => {
+  const dd = document.getElementById('profileDropdown');
+  if (dd && dd.classList.contains('open') && !e.target.closest('.profile-wrap')) {
+    dd.classList.remove('open');
+  }
+});
+
+// ══════════════════════════════════════════
 // MANAGE USERS (Admin only)
 // ══════════════════════════════════════════
 async function renderUsers() {
@@ -1298,6 +1802,216 @@ async function assignRole(username) {
   showToast(`Role updated for @${username} → ${ROLE_LABEL[newRole]||newRole}`, 'good');
   renderUsers();
 }
+
+// ══════════════════════════════════════════
+// DAMAGED MACHINES
+// ══════════════════════════════════════════
+function openAddDamagedModal() {
+  if (!canEditRole()) { showToast('View-only access.','warn'); return; }
+  document.getElementById('dmgDept').innerHTML = departments.map(d=>`<option value="${d.name}">${d.name}</option>`).join('');
+  ['dmgId','dmgName','dmgDesc'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('addDamagedModal').classList.add('open');
+}
+async function saveDamagedMachine() {
+  const name = document.getElementById('dmgName').value.trim();
+  const desc = document.getElementById('dmgDesc').value.trim();
+  if (!name||!desc) { showToast('Fill in machine name and damage description!','warn'); return; }
+  const entry = { assetId:document.getElementById('dmgId').value.trim(),
+    name, dept:document.getElementById('dmgDept').value, desc,
+    reportedBy:currentUser.firstName+' '+currentUser.lastName,
+    date:new Date().toLocaleDateString(), time:new Date().toLocaleString() };
+  const existing = (await dbGet('damaged'))||[];
+  const list = Array.isArray(existing)?existing:Object.values(existing);
+  list.push(entry);
+  await dbSet('damaged',list);
+  closeModal('addDamagedModal');
+  showToast(`${name} reported as damaged`,'err');
+  renderDamaged();
+}
+async function renderDamaged() {
+  const body = document.getElementById('damagedBody');
+  body.innerHTML='<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--text2)">Loading...</td></tr>';
+  const data = await dbGet('damaged');
+  const list = data?(Array.isArray(data)?data:Object.values(data)).filter(Boolean):[];
+  if (!list.length){body.innerHTML='<tr><td colspan="7" style="text-align:center;padding:30px;color:var(--text2)">No damaged machines recorded.</td></tr>';return;}
+  body.innerHTML=list.map((r,i)=>`<tr>
+    <td style="font-family:var(--font-mono);font-size:12px;color:var(--accent)">${r.assetId||'—'}</td>
+    <td style="font-weight:600;color:var(--white)">${r.name}</td>
+    <td>${r.dept}</td>
+    <td style="color:var(--red)">${r.desc}</td>
+    <td style="font-size:12px;color:var(--text2)">${r.reportedBy}</td>
+    <td style="font-size:12px;color:var(--text2)">${r.date}</td>
+    <td>${canEditRole()?`<button class="btn btn-ghost" style="padding:4px 10px;font-size:12px;color:var(--red);border-color:rgba(255,77,106,.2)" onclick="deleteDamaged(${i})">Remove</button>`:''}</td>
+  </tr>`).join('');
+}
+async function deleteDamaged(idx){
+  const data=await dbGet('damaged');
+  const list=Array.isArray(data)?data:Object.values(data);
+  list.splice(idx,1);await dbSet('damaged',list);showToast('Record removed','info');renderDamaged();
+}
+
+// ══════════════════════════════════════════
+// NEW MACHINE STOCK
+// ══════════════════════════════════════════
+function openAddStockModal(){
+  if(!canEditRole()){showToast('View-only access.','warn');return;}
+  ['stkId','stkName','stkModel','stkNotes'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('stkQty').value=1;
+  document.getElementById('stkDate').value=new Date().toISOString().split('T')[0];
+  document.getElementById('addStockModal').classList.add('open');
+}
+async function saveStockItem(){
+  const name=document.getElementById('stkName').value.trim();
+  if(!name){showToast('Enter machine name!','warn');return;}
+  let assetId=document.getElementById('stkId').value.trim();
+  if(!assetId) assetId='STK-'+String(Date.now()).slice(-4);
+  const entry={assetId,name,qty:parseInt(document.getElementById('stkQty').value)||1,
+    model:document.getElementById('stkModel').value.trim(),
+    receivedDate:document.getElementById('stkDate').value,
+    notes:document.getElementById('stkNotes').value.trim(),
+    addedBy:currentUser.firstName+' '+currentUser.lastName};
+  const existing=(await dbGet('stock'))||[];
+  const list=Array.isArray(existing)?existing:Object.values(existing);
+  list.push(entry);
+  await dbSet('stock',list);
+  closeModal('addStockModal');
+  showToast(`${name} added to stock — ID: ${assetId}`,'good');
+  renderStock();
+}
+async function renderStock(){
+  const body=document.getElementById('stockBody');
+  body.innerHTML='<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--text2)">Loading...</td></tr>';
+  const data=await dbGet('stock');
+  const list=data?(Array.isArray(data)?data:Object.values(data)).filter(Boolean):[];
+  if(!list.length){body.innerHTML='<tr><td colspan="7" style="text-align:center;padding:30px;color:var(--text2)">No stock items recorded.</td></tr>';return;}
+  body.innerHTML=list.map((r,i)=>`<tr>
+    <td style="font-family:var(--font-mono);font-size:12px;color:var(--accent)">${r.assetId}</td>
+    <td style="font-weight:600;color:var(--white)">${r.name}</td>
+    <td><span class="status-pill pill-Good">${r.qty}</span></td>
+    <td style="font-size:12px;color:var(--text2)">${r.model||'—'}</td>
+    <td style="font-size:12px;color:var(--text2)">${r.receivedDate||'—'}</td>
+    <td style="font-size:12px;color:var(--text2);max-width:140px">${r.notes||'—'}</td>
+    <td>${canEditRole()?`<button class="btn btn-ghost" style="padding:4px 10px;font-size:12px;color:var(--red);border-color:rgba(255,77,106,.2)" onclick="deleteStock(${i})">Remove</button>`:''}</td>
+  </tr>`).join('');
+}
+async function deleteStock(idx){
+  const data=await dbGet('stock');
+  const list=Array.isArray(data)?data:Object.values(data);
+  list.splice(idx,1);await dbSet('stock',list);showToast('Removed','info');renderStock();
+}
+
+// ══════════════════════════════════════════
+// SPARE PARTS
+// ══════════════════════════════════════════
+let editPartIdx=-1;
+function openAddPartModal(){
+  if(!canEditRole()){showToast('View-only access.','warn');return;}
+  ['partName','partMachine','partNotes'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('partQty').value=0;
+  document.getElementById('partMin').value=1;
+  document.getElementById('addPartModal').classList.add('open');
+}
+async function saveSparePart(){
+  const name=document.getElementById('partName').value.trim();
+  if(!name){showToast('Enter part name!','warn');return;}
+  const entry={name,machine:document.getElementById('partMachine').value.trim(),
+    qty:parseInt(document.getElementById('partQty').value)||0,
+    min:parseInt(document.getElementById('partMin').value)||1,
+    notes:document.getElementById('partNotes').value.trim(),
+    updatedBy:currentUser.firstName+' '+currentUser.lastName,
+    updatedAt:new Date().toLocaleDateString()};
+  const existing=(await dbGet('spareparts'))||[];
+  const list=Array.isArray(existing)?existing:Object.values(existing);
+  list.push(entry);
+  await dbSet('spareparts',list);
+  closeModal('addPartModal');
+  showToast(`${name} added`,'good');
+  renderSpareParts();
+}
+async function openEditPartModal(idx){
+  const data=await dbGet('spareparts');
+  const list=Array.isArray(data)?data:Object.values(data);
+  const r=list[idx]; editPartIdx=idx;
+  document.getElementById('editPartName').textContent=r.name+(r.machine?' — '+r.machine:'');
+  document.getElementById('editPartQty').value=r.qty;
+  document.getElementById('editPartMin').value=r.min;
+  document.getElementById('editPartNotes').value=r.notes||'';
+  document.getElementById('editPartModal').classList.add('open');
+}
+async function saveEditPart(){
+  const data=await dbGet('spareparts');
+  const list=Array.isArray(data)?data:Object.values(data);
+  list[editPartIdx]={...list[editPartIdx],
+    qty:parseInt(document.getElementById('editPartQty').value)||0,
+    min:parseInt(document.getElementById('editPartMin').value)||1,
+    notes:document.getElementById('editPartNotes').value.trim(),
+    updatedBy:currentUser.firstName+' '+currentUser.lastName,
+    updatedAt:new Date().toLocaleDateString()};
+  await dbSet('spareparts',list);
+  closeModal('editPartModal');
+  showToast('Stock updated','good');
+  renderSpareParts();
+}
+async function deletePart(idx){
+  const data=await dbGet('spareparts');
+  const list=Array.isArray(data)?data:Object.values(data);
+  list.splice(idx,1);await dbSet('spareparts',list);showToast('Removed','info');renderSpareParts();
+}
+async function renderSpareParts(){
+  const body=document.getElementById('partsBody');
+  body.innerHTML='<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--text2)">Loading...</td></tr>';
+  const data=await dbGet('spareparts');
+  const list=data?(Array.isArray(data)?data:Object.values(data)).filter(Boolean):[];
+  if(!list.length){body.innerHTML='<tr><td colspan="7" style="text-align:center;padding:30px;color:var(--text2)">No spare parts recorded.</td></tr>';return;}
+  body.innerHTML=list.map((r,i)=>{
+    const ok=r.qty>=r.min, low=r.qty>0&&r.qty<r.min;
+    const pc=ok?'pill-Good':low?'pill-Service':'pill-Repair';
+    const pt=ok?'✅ OK':low?'⚠️ Low':'🚨 Out of Stock';
+    return `<tr>
+      <td style="font-weight:600;color:var(--white)">${r.name}</td>
+      <td style="font-size:13px;color:var(--text2)">${r.machine||'—'}</td>
+      <td><span style="font-size:16px;font-weight:700;color:${ok?'var(--green)':low?'var(--yellow)':'var(--red)'}">${r.qty}</span></td>
+      <td style="font-size:13px;color:var(--text2)">${r.min}</td>
+      <td><span class="status-pill ${pc}">${pt}</span></td>
+      <td style="font-size:12px;color:var(--text2);max-width:130px">${r.notes||'—'}</td>
+      <td style="display:flex;gap:6px">${canEditRole()?`
+        <button class="btn btn-primary" style="padding:4px 10px;font-size:12px" onclick="openEditPartModal(${i})">Edit</button>
+        <button class="btn btn-ghost" style="padding:4px 10px;font-size:12px;color:var(--red)" onclick="deletePart(${i})">✕</button>`:''}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ══════════════════════════════════════════
+// MY PROFILE
+// ══════════════════════════════════════════
+function openProfile(){
+  document.getElementById('profFirst').value=currentUser.firstName;
+  document.getElementById('profLast').value=currentUser.lastName;
+  document.getElementById('profPass').value='';
+  document.getElementById('profPass2').value='';
+  document.getElementById('profileErr').style.display='none';
+  document.getElementById('profileSuccess').style.display='none';
+}
+async function saveProfile(){
+  const first=document.getElementById('profFirst').value.trim();
+  const last=document.getElementById('profLast').value.trim();
+  const pass=document.getElementById('profPass').value;
+  const pass2=document.getElementById('profPass2').value;
+  document.getElementById('profileErr').style.display='none';
+  document.getElementById('profileSuccess').style.display='none';
+  if(!first||!last){document.getElementById('profileErr').textContent='Name cannot be empty.';document.getElementById('profileErr').style.display='block';return;}
+  if(pass&&pass.length<4){document.getElementById('profileErr').textContent='Password min 4 characters.';document.getElementById('profileErr').style.display='block';return;}
+  if(pass&&pass!==pass2){document.getElementById('profileErr').textContent='Passwords do not match.';document.getElementById('profileErr').style.display='block';return;}
+  const updates={firstName:first,lastName:last};
+  if(pass) updates.password=pass;
+  await dbSet('users/'+currentUser.username,{...currentUser,...updates});
+  currentUser={...currentUser,...updates};
+  document.getElementById('topName').textContent=first+' '+last;
+  document.getElementById('topAvatar').textContent=first[0].toUpperCase();
+  document.getElementById('profileSuccess').textContent='Profile updated!';
+  document.getElementById('profileSuccess').style.display='block';
+}
+
 window.switchAuth = switchAuth;
 window.doLogin = doLogin;
 window.doRegister = doRegister;
@@ -1317,9 +2031,35 @@ window.confirmDeleteEquip = confirmDeleteEquip;
 window.confirmDeleteDept = confirmDeleteDept;
 window.openAddDeptModal = openAddDeptModal;
 window.saveNewDept = saveNewDept;
+window.renderDamaged = renderDamaged;
+window.openAddDamagedModal = openAddDamagedModal;
+window.saveNewDamaged = saveNewDamaged;
+window.renderStock = renderStock;
+window.openAddStockModal = openAddStockModal;
+window.saveNewStock = saveNewStock;
+window.renderSpares = renderSpares;
+window.openAddSpareModal = openAddSpareModal;
+window.saveNewSpare = saveNewSpare;
+window.updateSpareQty = updateSpareQty;
+window.deleteRecord = deleteRecord;
+window.toggleProfile = toggleProfile;
+window.openEditProfile = openEditProfile;
+window.saveProfile = saveProfile;
 window.renderUsers = renderUsers;
 window.assignRole = assignRole;
 window.renderReport = renderReport;
+window.openAddDamagedModal = openAddDamagedModal;
+window.saveDamagedMachine = saveDamagedMachine;
+window.deleteDamaged = deleteDamaged;
+window.openAddStockModal = openAddStockModal;
+window.saveStockItem = saveStockItem;
+window.deleteStock = deleteStock;
+window.openAddPartModal = openAddPartModal;
+window.saveSparePart = saveSparePart;
+window.openEditPartModal = openEditPartModal;
+window.saveEditPart = saveEditPart;
+window.deletePart = deletePart;
+window.saveProfile = saveProfile;
 
 // ── Hide loading overlay once Firebase is initialized ──
 document.getElementById('loadingOverlay').style.display = 'none';
